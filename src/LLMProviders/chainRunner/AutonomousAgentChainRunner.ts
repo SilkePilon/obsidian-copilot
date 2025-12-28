@@ -2,7 +2,6 @@ import { ModelCapability } from "@/constants";
 import { MessageContent } from "@/imageProcessing/imageProcessor";
 import { logError, logInfo, logWarn } from "@/logger";
 import { UserMemoryManager } from "@/memory/UserMemoryManager";
-import { checkIsPlusUser } from "@/plusUtils";
 import { getSettings, getSystemPromptWithMemory } from "@/settings/model";
 import { initializeBuiltinTools } from "@/tools/builtinTools";
 import { extractParametersFromZod, SimpleTool } from "@/tools/SimpleTool";
@@ -235,9 +234,7 @@ ${params}
     let fullAIResponse = "";
     let responseMetadata: ResponseMetadata | undefined;
 
-    const isPlusUser = await checkIsPlusUser({
-      isAutonomousAgent: true,
-    });
+    // License check removed - all features now free
 
     // Use model adapter for clean model-specific handling
     const chatModel = this.chainManager.chatModelManager.getChatModel();
@@ -249,24 +246,6 @@ ${params}
 
     // Create ThinkBlockStreamer to manage all content and errors
     const thinkStreamer = new ThinkBlockStreamer(updateCurrentAiMessage, adapter, excludeThinking);
-
-    if (!isPlusUser) {
-      await this.handleError(
-        new Error("Invalid license key"),
-        thinkStreamer.processErrorChunk.bind(thinkStreamer)
-      );
-      const errorResponse = thinkStreamer.close().content;
-
-      // Use handleResponse to properly save error to conversation history and memory
-      return this.handleResponse(
-        errorResponse,
-        userMessage,
-        abortController,
-        addMessage,
-        updateCurrentAiMessage,
-        undefined // no sources
-      );
-    }
 
     const modelNameForLog = (chatModel as { modelName?: string } | undefined)?.modelName;
 

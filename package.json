@@ -149,6 +149,7 @@
     "sse": "github:mpetazzoni/sse.js",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "trie-search": "^2.2.0"
+    "trie-search": "^2.2.0",
+    "youtube-transcript-plus": "^1.1.1"
   }
 }

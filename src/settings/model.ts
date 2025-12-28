@@ -153,6 +153,16 @@ export interface CopilotSettings {
   quickCommandIncludeNoteContext: boolean;
   /** Automatically add text selections to chat context */
   autoIncludeTextSelection: boolean;
+  /** Web search provider (tavily, brave, serpapi, serper, duckduckgo, searxng) */
+  webSearchProvider: string;
+  /** API key for web search providers that require it (deprecated, use webSearchApiKeys) */
+  webSearchApiKey: string;
+  /** Per-provider API keys for web search providers */
+  webSearchApiKeys: Record<string, string>;
+  /** Base URL for self-hosted search (e.g., SearXNG instance) */
+  webSearchBaseUrl: string;
+  /** Use local embedding-based reranking instead of external API */
+  useLocalReranking: boolean;
 }
 
 export const settingsStore = createStore();
@@ -503,7 +513,6 @@ function mergeActiveModels(
           ...builtInModel,
           ...model,
           isBuiltIn: true,
-          believerExclusive: builtInModel.believerExclusive,
         });
       } else {
         modelMap.set(key, {

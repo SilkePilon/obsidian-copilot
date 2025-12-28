@@ -4,8 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 import { ChainType } from "./chainFactory";
 import { PromptSortStrategy } from "./types";
 
-export const BREVILABS_API_BASE_URL = "https://api.brevilabs.com/v1";
-export const BREVILABS_MODELS_BASE_URL = "https://models.brevilabs.com/v1";
 export const CHAT_VIEWTYPE = "copilot-chat-view";
 export const USER_SENDER = "user";
 export const AI_SENDER = "ai";
@@ -136,7 +134,6 @@ export const DEFAULT_MODEL_SETTING = {
 } as const;
 
 export enum ChatModels {
-  COPILOT_PLUS_FLASH = "copilot-plus-flash",
   GPT_5 = "gpt-5",
   GPT_5_mini = "gpt-5-mini",
   GPT_5_nano = "gpt-5-nano",
@@ -178,7 +175,6 @@ export enum ChatModelProviders {
   GROQ = "groq",
   OLLAMA = "ollama",
   LM_STUDIO = "lm-studio",
-  COPILOT_PLUS = "copilot-plus",
   MISTRAL = "mistralai",
   DEEPSEEK = "deepseek",
   COHEREAI = "cohereai",
@@ -198,16 +194,6 @@ export const MODEL_CAPABILITIES: Record<ModelCapability, string> = {
 };
 
 export const BUILTIN_CHAT_MODELS: CustomModel[] = [
-  {
-    name: ChatModels.COPILOT_PLUS_FLASH,
-    provider: ChatModelProviders.COPILOT_PLUS,
-    enabled: true,
-    isBuiltIn: true,
-    core: true,
-    plusExclusive: true,
-    projectEnabled: false,
-    capabilities: [ModelCapability.VISION],
-  },
   {
     name: ChatModels.OPENROUTER_GEMINI_2_5_FLASH_LITE,
     provider: ChatModelProviders.OPENROUTERAI,
@@ -380,8 +366,6 @@ export enum EmbeddingModelProviders {
   OLLAMA = "ollama",
   LM_STUDIO = "lm-studio",
   OPENAI_FORMAT = "3rd party (openai-format)",
-  COPILOT_PLUS = "copilot-plus",
-  COPILOT_PLUS_JINA = "copilot-plus-jina",
   SILICONFLOW = "siliconflow",
 }
 
@@ -393,43 +377,10 @@ export enum EmbeddingModels {
   COHEREAI_EMBED_MULTILINGUAL_LIGHT_V3_0 = "embed-multilingual-light-v3.0",
   GOOGLE_ENG = "text-embedding-004",
   GOOGLE_GEMINI_EMBEDDING = "gemini-embedding-001",
-  COPILOT_PLUS_SMALL = "copilot-plus-small",
-  COPILOT_PLUS_LARGE = "copilot-plus-large",
-  COPILOT_PLUS_MULTILINGUAL = "copilot-plus-multilingual",
   SILICONFLOW_QWEN3_EMBEDDING_0_6B = "Qwen/Qwen3-Embedding-0.6B",
 }
 
 export const BUILTIN_EMBEDDING_MODELS: CustomModel[] = [
-  {
-    name: EmbeddingModels.COPILOT_PLUS_SMALL,
-    provider: EmbeddingModelProviders.COPILOT_PLUS,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-  },
-  {
-    name: EmbeddingModels.COPILOT_PLUS_LARGE,
-    provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-    believerExclusive: true,
-    dimensions: 1024,
-  },
-  {
-    name: EmbeddingModels.COPILOT_PLUS_MULTILINGUAL,
-    provider: EmbeddingModelProviders.COPILOT_PLUS_JINA,
-    enabled: true,
-    isBuiltIn: true,
-    isEmbeddingModel: true,
-    core: true,
-    plusExclusive: true,
-    dimensions: 512,
-  },
   {
     name: EmbeddingModels.OPENAI_EMBEDDING_SMALL,
     provider: EmbeddingModelProviders.OPENAI,
@@ -610,18 +561,6 @@ export const ProviderInfo: Record<Provider, ProviderMetadata> = {
     keyManagementURL: "https://console.aws.amazon.com/iam/home#/security_credentials",
     listModelURL: "",
   },
-  [EmbeddingModelProviders.COPILOT_PLUS]: {
-    label: "Copilot Plus",
-    host: BREVILABS_MODELS_BASE_URL,
-    keyManagementURL: "",
-    listModelURL: "",
-  },
-  [EmbeddingModelProviders.COPILOT_PLUS_JINA]: {
-    label: "Copilot Plus",
-    host: BREVILABS_MODELS_BASE_URL,
-    keyManagementURL: "",
-    listModelURL: "",
-  },
 };
 
 // Map provider to its settings key for API key
@@ -634,7 +573,6 @@ export const ProviderSettingsKeyMap: Record<SettingKeyProviders, keyof CopilotSe
   openrouterai: "openRouterAiApiKey",
   cohereai: "cohereApiKey",
   xai: "xaiApiKey",
-  "copilot-plus": "plusLicenseKey",
   mistralai: "mistralApiKey",
   deepseek: "deepseekApiKey",
   "amazon-bedrock": "amazonBedrockApiKey",
@@ -729,8 +667,8 @@ export const RESTRICTION_MESSAGES = {
 
 export const DEFAULT_SETTINGS: CopilotSettings = {
   userId: uuidv4(),
-  isPlusUser: false,
-  plusLicenseKey: "",
+  isPlusUser: true, // License system removed - all features now free
+  plusLicenseKey: "", // Kept for backwards compatibility
   openAIApiKey: "",
   openAIOrgId: "",
   huggingfaceApiKey: "",
@@ -820,6 +758,12 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   quickCommandModelKey: undefined,
   quickCommandIncludeNoteContext: true,
   autoIncludeTextSelection: false,
+  // Provider settings
+  webSearchProvider: "tavily",
+  webSearchApiKey: "",
+  webSearchApiKeys: {},
+  webSearchBaseUrl: "",
+  useLocalReranking: true,
 };
 
 export const EVENT_NAMES = {

@@ -6,25 +6,24 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { SettingSwitch } from "@/components/ui/setting-switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { PLUS_UTM_MEDIUMS } from "@/constants";
 import { logError } from "@/logger";
-import { navigateToPlusPage, useIsPlusUser } from "@/plusUtils";
 import { updateSetting, useSettingsValue } from "@/settings/model";
-import { Docs4LLMParser } from "@/tools/FileParserManager";
 import { isRateLimitError } from "@/utils/rateLimitUtils";
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import {
   AlertTriangle,
+  Bot,
   ChevronDown,
+  Database,
   Download,
   FileText,
   History,
   LibraryBig,
   MessageCirclePlus,
+  MessageSquare,
   MoreHorizontal,
   RefreshCw,
   Sparkles,
-  SquareArrowOutUpRight,
 } from "lucide-react";
 import { Notice } from "obsidian";
 import React from "react";
@@ -131,9 +130,6 @@ export async function forceRebuildCurrentProjectContext() {
         );
 
         // Step 1: Completely clear all cached data for this project (in-memory and on-disk)
-        // Reset rate limit notice timer to allow showing notices during force rebuild
-        Docs4LLMParser.resetRateLimitNoticeTimer();
-
         await ProjectContextCache.getInstance().clearForProject(currentProject);
         new Notice(`Cache for project "${currentProject.name}" has been cleared.`);
 
@@ -197,7 +193,6 @@ export function ChatControls({
 }: ChatControlsProps) {
   const settings = useSettingsValue();
   const [selectedChain, setSelectedChain] = useChainType();
-  const isPlusUser = useIsPlusUser();
 
   const handleModeChange = (chainType: ChainType) => {
     setSelectedChain(chainType);
@@ -214,15 +209,30 @@ export function ChatControls({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost2" size="fit" className="tw-ml-1 tw-text-sm tw-text-muted">
-              {selectedChain === ChainType.LLM_CHAIN && "chat (free)"}
-              {selectedChain === ChainType.VAULT_QA_CHAIN && "vault QA (free)"}
-              {selectedChain === ChainType.COPILOT_PLUS_CHAIN && (
+              {selectedChain === ChainType.LLM_CHAIN && (
                 <div className="tw-flex tw-items-center tw-gap-1">
-                  <Sparkles className="tw-size-4" />
-                  copilot plus
+                  <MessageSquare className="tw-size-4" />
+                  Chat
                 </div>
               )}
-              {selectedChain === ChainType.PROJECT_CHAIN && "projects (alpha)"}
+              {selectedChain === ChainType.VAULT_QA_CHAIN && (
+                <div className="tw-flex tw-items-center tw-gap-1">
+                  <Database className="tw-size-4" />
+                  Vault QA
+                </div>
+              )}
+              {selectedChain === ChainType.COPILOT_PLUS_CHAIN && (
+                <div className="tw-flex tw-items-center tw-gap-1">
+                  <Bot className="tw-size-4" />
+                  Agent
+                </div>
+              )}
+              {selectedChain === ChainType.PROJECT_CHAIN && (
+                <div className="tw-flex tw-items-center tw-gap-1">
+                  <LibraryBig className="tw-size-4" />
+                  Projects (alpha)
+                </div>
+              )}
               <ChevronDown className="tw-mt-0.5 tw-size-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -232,59 +242,41 @@ export function ChatControls({
                 handleModeChange(ChainType.LLM_CHAIN);
               }}
             >
-              chat (free)
+              <div className="tw-flex tw-items-center tw-gap-1">
+                <MessageSquare className="tw-size-4" />
+                Chat
+              </div>
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
                 handleModeChange(ChainType.VAULT_QA_CHAIN);
               }}
             >
-              vault QA (free)
+              <div className="tw-flex tw-items-center tw-gap-1">
+                <Database className="tw-size-4" />
+                Vault QA
+              </div>
             </DropdownMenuItem>
-            {isPlusUser ? (
-              <DropdownMenuItem
-                onSelect={() => {
-                  handleModeChange(ChainType.COPILOT_PLUS_CHAIN);
-                }}
-              >
-                <div className="tw-flex tw-items-center tw-gap-1">
-                  <Sparkles className="tw-size-4" />
-                  copilot plus
-                </div>
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                onSelect={() => {
-                  navigateToPlusPage(PLUS_UTM_MEDIUMS.CHAT_MODE_SELECT);
-                  onCloseProject?.();
-                }}
-              >
-                copilot plus
-                <SquareArrowOutUpRight className="tw-size-3" />
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem
+              onSelect={() => {
+                handleModeChange(ChainType.COPILOT_PLUS_CHAIN);
+              }}
+            >
+              <div className="tw-flex tw-items-center tw-gap-1">
+                <Bot className="tw-size-4" />
+                Agent
+              </div>
+            </DropdownMenuItem>
 
-            {isPlusUser ? (
-              <DropdownMenuItem
-                className="tw-flex tw-items-center tw-gap-1"
-                onSelect={() => {
-                  handleModeChange(ChainType.PROJECT_CHAIN);
-                }}
-              >
-                <LibraryBig className="tw-size-4" />
-                projects (alpha)
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                onSelect={() => {
-                  navigateToPlusPage(PLUS_UTM_MEDIUMS.CHAT_MODE_SELECT);
-                  onCloseProject?.();
-                }}
-              >
-                copilot plus
-                <SquareArrowOutUpRight className="tw-size-3" />
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem
+              className="tw-flex tw-items-center tw-gap-1"
+              onSelect={() => {
+                handleModeChange(ChainType.PROJECT_CHAIN);
+              }}
+            >
+              <LibraryBig className="tw-size-4" />
+              Projects (alpha)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

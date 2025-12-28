@@ -1,4 +1,4 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+import { getYouTubeTranscript, extractYouTubeVideoId } from "@/tools/providers/YouTubeProvider";
 import { extractAllYoutubeUrls } from "@/utils";
 import { z } from "zod";
 import { createTool } from "./SimpleTool";
@@ -14,7 +14,6 @@ const youtubeTranscriptionTool = createTool({
   name: "youtubeTranscription",
   description: "Get transcripts of YouTube videos when the user provides YouTube URLs",
   schema: z.object({}), // Empty schema - the tool will receive _userMessageContent internally
-  isPlusOnly: true,
   requiresUserMessageContent: true,
   handler: async (args: YouTubeHandlerArgs) => {
     // The _userMessageContent is injected by the tool execution system
@@ -50,30 +49,30 @@ const youtubeTranscriptionTool = createTool({
     const results = await Promise.all(
       urls.map(async (url) => {
         try {
-          const response = await BrevilabsClient.getInstance().youtube4llm(url);
+          const result = await getYouTubeTranscript(url);
 
           // Check if transcript is empty
-          if (!response.response.transcript) {
+          if (!result.transcript) {
             return {
               url,
               success: false,
               message:
-                "Transcript not available. Only English videos with auto transcript enabled are supported",
+                "Transcript not available. The video may not have captions enabled.",
             };
           }
 
           return {
             url,
             success: true,
-            transcript: response.response.transcript,
-            elapsed_time_ms: response.elapsed_time_ms,
+            transcript: result.transcript,
+            language: result.language,
+            videoId: result.videoId,
           };
         } catch (error) {
-          console.error(`Error transcribing YouTube video ${url}:`, error);
           return {
             url,
             success: false,
-            message: "An error occurred while transcribing the YouTube video",
+            message: error instanceof Error ? error.message : "An error occurred while transcribing the YouTube video",
           };
         }
       })

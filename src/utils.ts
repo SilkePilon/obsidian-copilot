@@ -845,7 +845,7 @@ export function getProviderInfo(provider: string): ProviderMetadata {
 
 export function getProviderLabel(provider: string, model?: CustomModel): string {
   const baseLabel = ProviderInfo[provider as Provider]?.label || provider;
-  return baseLabel + (model?.believerExclusive && baseLabel === "Copilot Plus" ? "(Believer)" : "");
+  return baseLabel;
 }
 
 export function getProviderHost(provider: string): string {
@@ -1032,8 +1032,6 @@ export function getNeedSetKeyProvider() {
     ChatModelProviders.OLLAMA,
     ChatModelProviders.LM_STUDIO,
     ChatModelProviders.AZURE_OPENAI,
-    EmbeddingModelProviders.COPILOT_PLUS,
-    EmbeddingModelProviders.COPILOT_PLUS_JINA,
   ];
 
   return Object.entries(ProviderInfo)

@@ -1,4 +1,4 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
+import { getYouTubeTranscript, extractYouTubeVideoId } from "@/tools/providers/YouTubeProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { logError } from "@/logger";
@@ -61,19 +61,19 @@ function YoutubeTranscriptModalContent({ onClose }: { onClose: () => void }) {
     setError("");
 
     try {
-      const response = await BrevilabsClient.getInstance().youtube4llm(url);
+      const response = await getYouTubeTranscript(url);
 
-      if (!response.response.transcript) {
+      if (!response.transcript) {
         throw new Error(
-          "Transcript not available. Only English videos with auto transcript enabled are supported."
+          "Transcript not available. The video may not have captions enabled."
         );
       }
 
       // Store transcript data
       const newTranscriptData: TranscriptData = {
-        videoId: validation.videoId!,
-        transcript: response.response.transcript,
-        url: formatYoutubeUrl(validation.videoId!),
+        videoId: response.videoId,
+        transcript: response.transcript,
+        url: formatYoutubeUrl(response.videoId),
       };
 
       setTranscriptData(newTranscriptData);
@@ -205,7 +205,7 @@ export class YoutubeTranscriptModal extends Modal {
     super(app);
     // https://docs.obsidian.md/Reference/TypeScript+API/Modal/setTitle
     // @ts-ignore
-    this.setTitle("Download YouTube Script (plus)");
+    this.setTitle("Download YouTube Transcript");
   }
 
   onOpen() {

@@ -130,6 +130,14 @@ export class URLPillNode extends BasePillNode {
   decorate(): JSX.Element {
     const displayText = this.__title || this.__url;
 
+    if (!displayText) {
+      return (
+        <PillBadge className="tw-whitespace-nowrap">
+          <span className="tw-text-xs tw-text-faint">[Invalid URL]</span>
+        </PillBadge>
+      );
+    }
+
     return (
       <PillBadge className="tw-whitespace-nowrap">
         <div className="tw-flex tw-items-center tw-gap-1">

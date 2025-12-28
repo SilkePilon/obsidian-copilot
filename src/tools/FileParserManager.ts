@@ -1,9 +1,7 @@
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
 import { ProjectConfig } from "@/aiParams";
-import { PDFCache } from "@/cache/pdfCache";
+import { PDFCache, PdfParseResponse } from "@/cache/pdfCache";
 import { ProjectContextCache } from "@/cache/projectContextCache";
 import { logError, logInfo } from "@/logger";
-import { extractRetryTime, isRateLimitError } from "@/utils/rateLimitUtils";
 import { Notice, TFile, Vault } from "obsidian";
 import { CanvasLoader } from "./CanvasLoader";
 
@@ -20,19 +18,21 @@ export class MarkdownParser implements FileParser {
   }
 }
 
+/**
+ * Local PDF Parser using pdf-parse
+ * Extracts text content from PDF files without external API
+ */
 export class PDFParser implements FileParser {
   supportedExtensions = ["pdf"];
-  private brevilabsClient: BrevilabsClient;
   private pdfCache: PDFCache;
 
-  constructor(brevilabsClient: BrevilabsClient) {
-    this.brevilabsClient = brevilabsClient;
+  constructor() {
     this.pdfCache = PDFCache.getInstance();
   }
 
   async parseFile(file: TFile, vault: Vault): Promise<string> {
     try {
-      logInfo("Parsing PDF file:", file.path);
+      logInfo("Parsing PDF file locally:", file.path);
 
       // Try to get from cache first
       const cachedResponse = await this.pdfCache.get(file);
@@ -41,15 +41,39 @@ export class PDFParser implements FileParser {
         return cachedResponse.response;
       }
 
-      // If not in cache, read the file and call the API
+      // If not in cache, read the file and parse locally
+      const startTime = Date.now();
       const binaryContent = await vault.readBinary(file);
-      logInfo("Calling pdf4llm API for:", file.path);
-      const pdf4llmResponse = await this.brevilabsClient.pdf4llm(binaryContent);
-      await this.pdfCache.set(file, pdf4llmResponse);
-      return pdf4llmResponse.response;
+      
+      let pdfParse;
+      try {
+        // Use dynamic import for optional pdf-parse dependency
+        // @ts-ignore - pdf-parse is an optional dependency
+        const pdfParseModule = await import("pdf-parse");
+        pdfParse = pdfParseModule.default || pdfParseModule;
+      } catch (moduleError) {
+        logError("pdf-parse module not available:", moduleError);
+        return `[Error: Could not extract content from PDF ${file.basename}. The pdf-parse library is not installed. Please install it with: npm install pdf-parse]`;
+      }
+      
+      const buffer = Buffer.from(binaryContent);
+      const data = await pdfParse(buffer);
+      
+      const content = data.text || "";
+      const elapsed = Date.now() - startTime;
+      
+      logInfo(`PDF parsed locally in ${elapsed}ms, extracted ${content.length} characters`);
+      
+      const response: PdfParseResponse = {
+        response: content,
+        elapsed_time_ms: elapsed,
+      };
+      
+      await this.pdfCache.set(file, response);
+      return content;
     } catch (error) {
       logError(`Error extracting content from PDF ${file.path}:`, error);
-      return `[Error: Could not extract content from PDF ${file.basename}]`;
+      return `[Error: Could not extract content from PDF ${file.basename}. ${error instanceof Error ? error.message : "Unknown parsing error"}]`;
     }
   }
 
@@ -77,124 +101,30 @@ export class CanvasParser implements FileParser {
   }
 }
 
-export class Docs4LLMParser implements FileParser {
-  // Support various document and media file types
+/**
+ * Local document parser for text-based files
+ * Handles formats that can be parsed locally without external APIs
+ */
+export class LocalDocumentParser implements FileParser {
+  // Support text-based file types that can be read directly
   supportedExtensions = [
-    // Base types
-    "pdf",
-
-    // Documents and presentations
-    "602",
-    "abw",
-    "cgm",
-    "cwk",
-    "doc",
-    "docx",
-    "docm",
-    "dot",
-    "dotm",
-    "hwp",
-    "key",
-    "lwp",
-    "mw",
-    "mcw",
-    "pages",
-    "pbd",
-    "ppt",
-    "pptm",
-    "pptx",
-    "pot",
-    "potm",
-    "potx",
-    "rtf",
-    "sda",
-    "sdd",
-    "sdp",
-    "sdw",
-    "sgl",
-    "sti",
-    "sxi",
-    "sxw",
-    "stw",
-    "sxg",
+    // Text files
     "txt",
-    "uof",
-    "uop",
-    "uot",
-    "vor",
-    "wpd",
-    "wps",
-    "xml",
-    "zabw",
-    "epub",
-
-    // Images
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "bmp",
-    "svg",
-    "tiff",
-    "webp",
-    "web",
-    "htm",
-    "html",
-
-    // Spreadsheets
-    "xlsx",
-    "xls",
-    "xlsm",
-    "xlsb",
-    "xlw",
     "csv",
-    "dif",
-    "sylk",
-    "slk",
-    "prn",
-    "numbers",
-    "et",
-    "ods",
-    "fods",
-    "uos1",
-    "uos2",
-    "dbf",
-    "wk1",
-    "wk2",
-    "wk3",
-    "wk4",
-    "wks",
-    "123",
-    "wq1",
-    "wq2",
-    "wb1",
-    "wb2",
-    "wb3",
-    "qpw",
-    "xlr",
-    "eth",
     "tsv",
-
-    // Audio (limited to 20MB)
-    "mp3",
-    "mp4",
-    "mpeg",
-    "mpga",
-    "m4a",
-    "wav",
-    "webm",
+    "xml",
+    "html",
+    "htm",
+    "rtf",
+    
+    // Note: Other formats like docx, pptx, xlsx require specialized libraries
+    // Users should convert them to PDF or text for local processing
   ];
-  private brevilabsClient: BrevilabsClient;
+  
   private projectContextCache: ProjectContextCache;
   private currentProject: ProjectConfig | null;
-  private static lastRateLimitNoticeTime: number = 0;
 
-  public static resetRateLimitNoticeTimer(): void {
-    Docs4LLMParser.lastRateLimitNoticeTime = 0;
-  }
-
-  constructor(brevilabsClient: BrevilabsClient, project: ProjectConfig | null = null) {
-    this.brevilabsClient = brevilabsClient;
+  constructor(project: ProjectConfig | null = null) {
     this.projectContextCache = ProjectContextCache.getInstance();
     this.currentProject = project;
   }
@@ -202,11 +132,11 @@ export class Docs4LLMParser implements FileParser {
   async parseFile(file: TFile, vault: Vault): Promise<string> {
     try {
       logInfo(
-        `[Docs4LLMParser] Project ${this.currentProject?.name}: Parsing ${file.extension} file: ${file.path}`
+        `[LocalDocumentParser] Project ${this.currentProject?.name}: Parsing ${file.extension} file: ${file.path}`
       );
 
       if (!this.currentProject) {
-        logError("[Docs4LLMParser] No project context for parsing file: ", file.path);
+        logError("[LocalDocumentParser] No project context for parsing file: ", file.path);
         throw new Error("No project context provided for file parsing");
       }
 
@@ -216,102 +146,91 @@ export class Docs4LLMParser implements FileParser {
       );
       if (cachedContent) {
         logInfo(
-          `[Docs4LLMParser] Project ${this.currentProject.name}: Using cached content for: ${file.path}`
+          `[LocalDocumentParser] Project ${this.currentProject.name}: Using cached content for: ${file.path}`
         );
         return cachedContent;
       }
-      logInfo(
-        `[Docs4LLMParser] Project ${this.currentProject.name}: Cache miss for: ${file.path}. Proceeding to API call.`
-      );
 
-      const binaryContent = await vault.readBinary(file);
-
-      logInfo(
-        `[Docs4LLMParser] Project ${this.currentProject.name}: Calling docs4llm API for: ${file.path}`
-      );
-      const docs4llmResponse = await this.brevilabsClient.docs4llm(binaryContent, file.extension);
-
-      if (!docs4llmResponse || !docs4llmResponse.response) {
-        throw new Error("Empty response from docs4llm API");
-      }
-
-      // Extract markdown content from response
       let content = "";
-      if (typeof docs4llmResponse.response === "string") {
-        content = docs4llmResponse.response;
-      } else if (Array.isArray(docs4llmResponse.response)) {
-        // Handle array of documents from docs4llm
-        const markdownParts: string[] = [];
-        for (const doc of docs4llmResponse.response) {
-          if (doc.content) {
-            // Prioritize markdown content, then fallback to text content
-            if (doc.content.md) {
-              markdownParts.push(doc.content.md);
-            } else if (doc.content.text) {
-              markdownParts.push(doc.content.text);
-            }
-          }
-        }
-        content = markdownParts.join("\n\n");
-      } else if (typeof docs4llmResponse.response === "object") {
-        // Handle single object response (backward compatibility)
-        if (docs4llmResponse.response.md) {
-          content = docs4llmResponse.response.md;
-        } else if (docs4llmResponse.response.text) {
-          content = docs4llmResponse.response.text;
-        } else if (docs4llmResponse.response.content) {
-          content = docs4llmResponse.response.content;
-        } else {
-          // If no markdown/text/content field, stringify the entire response
-          content = JSON.stringify(docs4llmResponse.response, null, 2);
-        }
+      const ext = file.extension.toLowerCase();
+
+      // Handle different text-based formats
+      if (ext === "txt" || ext === "csv" || ext === "tsv" || ext === "xml") {
+        // Read as text directly
+        content = await vault.read(file);
+      } else if (ext === "html" || ext === "htm") {
+        // Read HTML and extract text
+        const htmlContent = await vault.read(file);
+        content = this.extractTextFromHtml(htmlContent);
+      } else if (ext === "rtf") {
+        // Basic RTF text extraction
+        const rtfContent = await vault.read(file);
+        content = this.extractTextFromRtf(rtfContent);
       } else {
-        content = String(docs4llmResponse.response);
+        content = `[Note: File type .${ext} requires external processing. Please convert to PDF or text format for local parsing.]`;
       }
 
-      // Cache the converted content
+      // Cache the content
       await this.projectContextCache.setFileContext(this.currentProject, file.path, content);
 
       logInfo(
-        `[Docs4LLMParser] Project ${this.currentProject.name}: Successfully processed and cached: ${file.path}`
+        `[LocalDocumentParser] Project ${this.currentProject.name}: Successfully processed and cached: ${file.path}`
       );
       return content;
     } catch (error) {
       logError(
-        `[Docs4LLMParser] Project ${this.currentProject?.name}: Error processing file ${file.path}:`,
+        `[LocalDocumentParser] Project ${this.currentProject?.name}: Error processing file ${file.path}:`,
         error
       );
-
-      // Check if this is a rate limit error and show user-friendly notice
-      if (isRateLimitError(error)) {
-        this.showRateLimitNotice(error);
-      }
-
-      throw error; // Propagate the error up
+      throw error;
     }
   }
 
-  private showRateLimitNotice(error: any): void {
-    const now = Date.now();
+  /**
+   * Extract text from HTML content
+   */
+  private extractTextFromHtml(html: string): string {
+    // Remove script and style tags
+    let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+    text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    text = text.replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "");
+    
+    // Remove HTML tags but keep content
+    text = text.replace(/<[^>]+>/g, " ");
+    
+    // Decode HTML entities
+    text = text.replace(/&nbsp;/g, " ");
+    text = text.replace(/&amp;/g, "&");
+    text = text.replace(/&lt;/g, "<");
+    text = text.replace(/&gt;/g, ">");
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/&#39;/g, "'");
+    
+    // Clean up whitespace
+    text = text.replace(/\s+/g, " ").trim();
+    
+    return text;
+  }
 
-    // Only show one rate limit notice per minute to avoid spam
-    if (now - Docs4LLMParser.lastRateLimitNoticeTime < 60000) {
-      return;
-    }
-
-    Docs4LLMParser.lastRateLimitNoticeTime = now;
-
-    const retryTime = extractRetryTime(error);
-
-    new Notice(
-      `⚠️ Rate limit exceeded for document processing. Please try again in ${retryTime}. Having fewer non-markdown files in the project will help.`,
-      10000 // Show notice for 10 seconds
-    );
+  /**
+   * Extract text from RTF content (basic implementation)
+   */
+  private extractTextFromRtf(rtf: string): string {
+    // Remove RTF control words and groups
+    let text = rtf.replace(/\\[a-z]+(-?\d+)?[ ]?/gi, "");
+    text = text.replace(/\{|\}/g, "");
+    text = text.replace(/\\'[0-9a-f]{2}/gi, ""); // Remove hex characters
+    text = text.replace(/\\\n/g, "\n");
+    text = text.replace(/\\par/gi, "\n");
+    
+    // Clean up whitespace
+    text = text.replace(/\s+/g, " ").trim();
+    
+    return text;
   }
 
   async clearCache(): Promise<void> {
-    // This method is no longer needed as cache clearing is handled at the project level
-    logInfo("Cache clearing is now handled at the project level");
+    logInfo("Cache clearing is handled at the project level");
   }
 }
 
@@ -332,7 +251,6 @@ export class FileParserManager {
   private currentProject: ProjectConfig | null;
 
   constructor(
-    brevilabsClient: BrevilabsClient,
     vault: Vault,
     isProjectMode: boolean = false,
     project: ProjectConfig | null = null
@@ -343,13 +261,13 @@ export class FileParserManager {
     // Register parsers
     this.registerParser(new MarkdownParser());
 
-    // In project mode, use Docs4LLMParser for all supported files including PDFs
-    this.registerParser(new Docs4LLMParser(brevilabsClient, project));
-
-    // Only register PDFParser when not in project mode
-    if (!isProjectMode) {
-      this.registerParser(new PDFParser(brevilabsClient));
+    // In project mode, use LocalDocumentParser for text-based files
+    if (isProjectMode && project) {
+      this.registerParser(new LocalDocumentParser(project));
     }
+
+    // Register PDF parser (works in both modes)
+    this.registerParser(new PDFParser());
 
     this.registerParser(new CanvasParser());
   }

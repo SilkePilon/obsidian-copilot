@@ -367,8 +367,7 @@ function ApiKeyModalContent({ onClose }: ApiKeyModalContentProps) {
                                     verifyingModel
                                   }
                                   variant="secondary"
-                                  size="sm"
-                                  className="tw-w-full tw-whitespace-nowrap"
+                                  className="tw-h-9 tw-w-full tw-whitespace-nowrap"
                                 >
                                   {verifyingModel ? (
                                     <Loader2 className="tw-mr-2 tw-size-4 tw-animate-spin" />

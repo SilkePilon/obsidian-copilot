@@ -91,7 +91,7 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
   return (
     <TooltipProvider delayDuration={0}>
       {/* Desktop view - show all icons when container is wide enough */}
-      <div className="tw-hidden tw-items-center tw-gap-1.5 @[420px]/chat-input:tw-flex">
+      <div className="tw-hidden tw-items-center @[420px]/chat-input:tw-flex">
         {/* Autonomous Agent button - only show in Copilot Plus mode and NOT in Projects mode */}
         {showAutonomousAgent && (
           <Tooltip>
@@ -115,63 +115,68 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
         )}
 
         {/* Toggle buttons for vault, web search, and composer - show when Autonomous Agent is off */}
-        {!autonomousAgentToggle && (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost2"
-                  size="fit"
-                  onClick={handleVaultToggle}
-                  className={cn(
-                    "tw-text-muted hover:tw-text-accent",
-                    vaultToggle && "tw-text-accent tw-bg-accent/10"
-                  )}
-                >
-                  <Database className="tw-size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="tw-px-1 tw-py-0.5">Toggle vault search</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost2"
-                  size="fit"
-                  onClick={handleWebToggle}
-                  className={cn(
-                    "tw-text-muted hover:tw-text-accent",
-                    webToggle && "tw-text-accent tw-bg-accent/10"
-                  )}
-                >
-                  <Globe className="tw-size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="tw-px-1 tw-py-0.5">Toggle web search</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost2"
-                  size="fit"
-                  onClick={handleComposerToggle}
-                  className={cn(
-                    "tw-text-muted hover:tw-text-accent",
-                    composerToggle && "tw-text-accent tw-bg-accent/10"
-                  )}
-                >
-                  <span className="tw-flex tw-items-center tw-gap-0.5">
-                    <Sparkles className="tw-size-2" />
-                    <Pen className="tw-size-3" />
-                  </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="tw-px-1 tw-py-0.5">
-                Toggle composer (note editing)
-              </TooltipContent>
-            </Tooltip>
-          </>
-        )}
+        <div
+          className={cn(
+            "tw-flex tw-items-center tw-gap-1.5 tw-overflow-hidden tw-transition-all tw-duration-300 tw-ease-in-out",
+            !autonomousAgentToggle
+              ? "tw-ml-1.5 tw-max-w-[200px] tw-opacity-100"
+              : "tw-ml-0 tw-max-w-0 tw-opacity-0"
+          )}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost2"
+                size="fit"
+                onClick={handleVaultToggle}
+                className={cn(
+                  "tw-text-muted hover:tw-text-accent",
+                  vaultToggle && "tw-text-accent tw-bg-accent/10"
+                )}
+              >
+                <Database className="tw-size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="tw-px-1 tw-py-0.5">Toggle vault search</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost2"
+                size="fit"
+                onClick={handleWebToggle}
+                className={cn(
+                  "tw-text-muted hover:tw-text-accent",
+                  webToggle && "tw-text-accent tw-bg-accent/10"
+                )}
+              >
+                <Globe className="tw-size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="tw-px-1 tw-py-0.5">Toggle web search</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost2"
+                size="fit"
+                onClick={handleComposerToggle}
+                className={cn(
+                  "tw-text-muted hover:tw-text-accent",
+                  composerToggle && "tw-text-accent tw-bg-accent/10"
+                )}
+              >
+                <span className="tw-flex tw-items-center tw-gap-0.5">
+                  <Sparkles className="tw-size-2" />
+                  <Pen className="tw-size-3" />
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="tw-px-1 tw-py-0.5">
+              Toggle composer (note editing)
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Mobile view - show overflow dropdown when container is narrow */}
