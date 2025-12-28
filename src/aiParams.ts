@@ -130,8 +130,6 @@ export interface CustomModel {
   frequencyPenalty?: number;
 
   projectEnabled?: boolean;
-  plusExclusive?: boolean;
-  believerExclusive?: boolean;
   capabilities?: ModelCapability[];
   displayName?: string;
 

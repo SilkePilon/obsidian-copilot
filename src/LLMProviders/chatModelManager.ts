@@ -1,6 +1,5 @@
 import { CustomModel, getModelKey, ModelConfig } from "@/aiParams";
 import {
-  BREVILABS_MODELS_BASE_URL,
   BUILTIN_CHAT_MODELS,
   ChatModelProviders,
   ModelCapability,
@@ -55,7 +54,6 @@ const CHAT_PROVIDER_CONSTRUCTORS = {
   [ChatModelProviders.GROQ]: ChatGroq,
   [ChatModelProviders.OPENAI_FORMAT]: ChatOpenAI,
   [ChatModelProviders.SILICONFLOW]: ChatOpenAI,
-  [ChatModelProviders.COPILOT_PLUS]: ChatOpenAI,
   [ChatModelProviders.MISTRAL]: ChatMistralAI,
   [ChatModelProviders.DEEPSEEK]: ChatDeepSeek,
   [ChatModelProviders.AMAZON_BEDROCK]: BedrockChatModel,
@@ -89,7 +87,6 @@ export default class ChatModelManager {
     [ChatModelProviders.OLLAMA]: () => "default-key",
     [ChatModelProviders.LM_STUDIO]: () => "default-key",
     [ChatModelProviders.OPENAI_FORMAT]: () => "default-key",
-    [ChatModelProviders.COPILOT_PLUS]: () => getSettings().plusLicenseKey,
     [ChatModelProviders.MISTRAL]: () => getSettings().mistralApiKey,
     [ChatModelProviders.DEEPSEEK]: () => getSettings().deepseekApiKey,
     [ChatModelProviders.AMAZON_BEDROCK]: () => getSettings().amazonBedrockApiKey,
@@ -319,14 +316,6 @@ export default class ChatModelManager {
           customModel.temperature ?? settings.temperature,
           customModel
         ),
-      },
-      [ChatModelProviders.COPILOT_PLUS]: {
-        modelName: modelName,
-        apiKey: await getDecryptedKey(settings.plusLicenseKey),
-        configuration: {
-          baseURL: BREVILABS_MODELS_BASE_URL,
-          fetch: customModel.enableCors ? safeFetch : undefined,
-        },
       },
       [ChatModelProviders.MISTRAL]: {
         model: modelName,
@@ -601,8 +590,8 @@ export default class ChatModelManager {
   }
 
   /**
-   * Helper to validate a model config has valid credentials and meets entitlement requirements.
-   * Does NOT check believerExclusive - that's validated at usage time, not selection time.
+   * Helper to validate a model config has valid credentials.
+   * License checks removed - all features now free.
    */
   private isModelConfigValid(model: CustomModel, settings: CopilotSettings): boolean {
     const modelKey = getModelKeyFromModel(model);
@@ -613,10 +602,7 @@ export default class ChatModelManager {
       return false;
     }
 
-    // Check Copilot Plus entitlement requirements
-    if (model.plusExclusive && !settings.isPlusUser) {
-      return false;
-    }
+    // License checks removed - all models now available to everyone
 
     return true;
   }
@@ -625,9 +611,6 @@ export default class ChatModelManager {
    * Resolves the active chat model for temperature override operations.
    * Uses a single source of truth: getModelKey() -> findCustomModel()
    * Falls back to first valid model in settings.activeModels if current selection is invalid.
-   *
-   * Note: believerExclusive models are trusted if explicitly selected by the user,
-   * but skipped in fallback to avoid selecting them for non-Believer users.
    */
   private resolveModelForTemperatureOverride(): CustomModel {
     const settings = getSettings();
@@ -638,7 +621,6 @@ export default class ChatModelManager {
       if (currentModelKey) {
         const model = findCustomModel(currentModelKey, settings.activeModels);
 
-        // Validate it (trust believerExclusive if user selected it)
         if (this.isModelConfigValid(model, settings)) {
           return model;
         }
@@ -648,9 +630,8 @@ export default class ChatModelManager {
     }
 
     // Fallback: Find first valid model in settings.activeModels
-    // Skip believerExclusive models in fallback to avoid selecting them for non-Believer users
     for (const model of settings.activeModels) {
-      if (model.enabled && !model.believerExclusive && this.isModelConfigValid(model, settings)) {
+      if (model.enabled && this.isModelConfigValid(model, settings)) {
         return model;
       }
     }
@@ -708,11 +689,6 @@ export default class ChatModelManager {
     }
     if (!selectedModel.hasApiKey) {
       const errorMessage = `API key is not provided for the model: ${modelKey}.`;
-      if (model.provider === ChatModelProviders.COPILOT_PLUS) {
-        throw new MissingPlusLicenseError(
-          "Copilot Plus license key is not configured. Please enter your license key in the Copilot Plus section at the top of Basic Settings."
-        );
-      }
       throw new MissingApiKeyError(errorMessage);
     }
 

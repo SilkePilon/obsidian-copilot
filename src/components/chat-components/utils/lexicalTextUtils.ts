@@ -545,7 +545,7 @@ export function parseTextForPills(
 /**
  * Converts parsed content segments into Lexical nodes
  * @param segments The parsed content segments
- * @returns Array of Lexical nodes
+ * @returns Array of Lexical nodes (never includes null/undefined)
  */
 export function createNodesFromSegments(segments: ParsedContent[]): LexicalNode[] {
   const nodes: LexicalNode[] = [];

@@ -47,6 +47,8 @@ const context = await esbuild.context({
     "node:stream",
     "node:crypto",
     "node:async_hooks",
+    "fs/promises",
+    "path",
   ],
   format: "cjs",
   target: "es2020",

@@ -18,10 +18,10 @@ import { Mention } from "@/mentions/Mention";
 import { getMatchingPatterns, shouldIndexFile } from "@/search/searchUtils";
 import { getSettings, subscribeToSettingsChange } from "@/settings/model";
 import { FileParserManager } from "@/tools/FileParserManager";
+import { getYouTubeTranscript } from "@/tools/providers/YouTubeProvider";
 import { err2String } from "@/utils";
 import { isRateLimitError } from "@/utils/rateLimitUtils";
 import { App, Notice, TFile } from "obsidian";
-import { BrevilabsClient } from "./brevilabsClient";
 import ChainManager from "./chainManager";
 import { ProjectLoadTracker } from "./projectLoadTracker";
 
@@ -42,7 +42,6 @@ export default class ProjectManager {
     this.chainMangerInstance = new ChainManager(app);
     this.projectContextCache = ProjectContextCache.getInstance();
     this.fileParserManager = new FileParserManager(
-      BrevilabsClient.getInstance(),
       this.app.vault,
       true,
       null
@@ -158,7 +157,6 @@ export default class ProjectManager {
       await this.getCurrentChainManager().createChainWithNewModel();
       // Update FileParserManager with the current project
       this.fileParserManager = new FileParserManager(
-        BrevilabsClient.getInstance(),
         this.app.vault,
         true,
         project
@@ -712,11 +710,11 @@ modified: ${stat ? new Date(stat.mtime).toISOString() : "unknown"}`;
         youtubeUrl,
         "youtube",
         async () => {
-          return BrevilabsClient.getInstance().youtube4llm(youtubeUrl);
+          return getYouTubeTranscript(youtubeUrl);
         }
       );
-      if (response.response.transcript) {
-        return `\n\nYouTube transcript from ${youtubeUrl}:\n${response.response.transcript}`;
+      if (response.transcript) {
+        return `\n\nYouTube transcript from ${youtubeUrl}:\n${response.transcript}`;
       }
       return "";
     } catch (error) {
@@ -741,7 +739,6 @@ modified: ${stat ? new Date(stat.mtime).toISOString() : "unknown"}`;
     }
 
     this.fileParserManager = new FileParserManager(
-      BrevilabsClient.getInstance(),
       this.app.vault,
       true,
       project

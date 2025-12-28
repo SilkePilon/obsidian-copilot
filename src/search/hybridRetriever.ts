@@ -1,11 +1,11 @@
 // DEPRECATED: Legacy hybrid retriever backed by Orama. Replaced by v3 TieredLexicalRetriever + MemoryIndexManager.
 import { LLM_TIMEOUT_MS } from "@/constants";
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
 import EmbeddingManager from "@/LLMProviders/embeddingManager";
 import ProjectManager from "@/LLMProviders/projectManager";
 import { logInfo } from "@/logger";
 import VectorStoreManager from "@/search/vectorStoreManager";
 import { getSettings } from "@/settings/model";
+import { localRerank } from "@/tools/providers/LocalReranker";
 import {
   extractNoteFiles,
   removeThinkTags,
@@ -98,7 +98,8 @@ export class HybridRetriever extends BaseRetriever {
         (maxOramaScore < this.options.useRerankerThreshold || allScoresAreNaN);
       // Apply reranking if max score is below the threshold or all scores are NaN
       if (shouldRerank) {
-        const rerankResponse = await BrevilabsClient.getInstance().rerank(
+        // Use local embedding-based reranking
+        const rerankResponse = await localRerank(
           query,
           // Limit the context length to 3000 characters to avoid overflowing the reranker
           combinedChunks.map((doc) => doc.pageContent.slice(0, 3000))

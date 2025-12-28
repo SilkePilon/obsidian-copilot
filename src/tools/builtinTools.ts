@@ -97,7 +97,7 @@ For localSearch with non-English query (PRESERVE ORIGINAL LANGUAGE):
       id: "webSearch",
       displayName: "Web Search",
       description:
-        "Search the INTERNET (NOT vault notes) when user explicitly asks for web/online information",
+        "Search the web (NOT vault notes) when you ask for online information",
       category: "search",
       copilotCommands: ["@websearch", "@web"],
       customPromptInstructions: `For webSearch:

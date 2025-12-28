@@ -1,7 +1,8 @@
 import { ImageProcessor } from "@/imageProcessing/imageProcessor";
-import { BrevilabsClient, Url4llmResponse } from "@/LLMProviders/brevilabsClient";
+import { getYouTubeTranscript, extractYouTubeVideoId } from "@/tools/providers/YouTubeProvider";
 import { err2String, isYoutubeUrl } from "@/utils";
-import { logError } from "@/logger";
+import { logError, logInfo } from "@/logger";
+import { requestUrl } from "obsidian";
 
 export interface MentionData {
   type: string;
@@ -10,14 +11,17 @@ export interface MentionData {
   error?: string;
 }
 
+export interface Url4llmResponse {
+  response: any;
+  elapsed_time_ms: number;
+}
+
 export class Mention {
   private static instance: Mention;
   private mentions: Map<string, MentionData>;
-  private brevilabsClient: BrevilabsClient;
 
   private constructor() {
     this.mentions = new Map();
-    this.brevilabsClient = BrevilabsClient.getInstance();
   }
 
   static getInstance(): Mention {
@@ -42,9 +46,56 @@ export class Mention {
       .filter((url, index, self) => self.indexOf(url) === index);
   }
 
+  /**
+   * Fetch URL content locally without using external API
+   */
   async processUrl(url: string): Promise<Url4llmResponse & { error?: string }> {
     try {
-      return await this.brevilabsClient.url4llm(url);
+      const startTime = Date.now();
+      logInfo(`Fetching URL content locally: ${url}`);
+      
+      const response = await requestUrl({
+        url: url,
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; ObsidianCopilot/1.0)",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+      });
+
+      // Extract text content from HTML
+      let content = response.text;
+      
+      // Simple HTML to text conversion
+      // Remove script and style tags
+      content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+      content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+      content = content.replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "");
+      
+      // Remove HTML tags but keep content
+      content = content.replace(/<[^>]+>/g, " ");
+      
+      // Decode HTML entities
+      content = content.replace(/&nbsp;/g, " ");
+      content = content.replace(/&amp;/g, "&");
+      content = content.replace(/&lt;/g, "<");
+      content = content.replace(/&gt;/g, ">");
+      content = content.replace(/&quot;/g, '"');
+      content = content.replace(/&#39;/g, "'");
+      
+      // Clean up whitespace
+      content = content.replace(/\s+/g, " ").trim();
+      
+      // Limit content length to avoid context overflow
+      const maxLength = 50000;
+      if (content.length > maxLength) {
+        content = content.substring(0, maxLength) + "... [content truncated]";
+      }
+
+      const elapsed = Date.now() - startTime;
+      logInfo(`URL content fetched in ${elapsed}ms, length: ${content.length}`);
+
+      return { response: content, elapsed_time_ms: elapsed };
     } catch (error) {
       const msg = err2String(error);
       logError(`Error processing URL ${url}: ${msg}`);
@@ -54,8 +105,13 @@ export class Mention {
 
   async processYoutubeUrl(url: string): Promise<{ transcript: string; error?: string }> {
     try {
-      const response = await this.brevilabsClient.youtube4llm(url);
-      return { transcript: response.response.transcript };
+      const videoId = extractYouTubeVideoId(url);
+      if (!videoId) {
+        return { transcript: "", error: "Could not extract video ID from URL" };
+      }
+      
+      const result = await getYouTubeTranscript(url);
+      return { transcript: result.transcript };
     } catch (error) {
       const msg = err2String(error);
       logError(`Error processing YouTube URL ${url}: ${msg}`);

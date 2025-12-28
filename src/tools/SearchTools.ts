@@ -1,6 +1,5 @@
 import { getStandaloneQuestion } from "@/chainUtils";
 import { TEXT_WEIGHT } from "@/constants";
-import { BrevilabsClient } from "@/LLMProviders/brevilabsClient";
 import { logInfo } from "@/logger";
 import { getSettings } from "@/settings/model";
 import { z } from "zod";
@@ -8,6 +7,7 @@ import { deduplicateSources } from "@/LLMProviders/chainRunner/utils/toolExecuti
 import { createTool, SimpleTool } from "./SimpleTool";
 import { RETURN_ALL_LIMIT } from "@/search/v3/SearchCore";
 import { getWebSearchCitationInstructions } from "@/LLMProviders/chainRunner/utils/citationUtils";
+import { performWebSearch } from "@/tools/providers/WebSearchProvider";
 
 // Define Zod schema for localSearch
 const localSearchSchema = z.object({
@@ -279,34 +279,57 @@ const webSearchTool = createTool({
   name: "webSearch",
   description: "Search the web for information",
   schema: webSearchSchema,
-  isPlusOnly: true,
   handler: async ({ query, chatHistory }) => {
     try {
       // Get standalone question considering chat history
       const standaloneQuestion = await getStandaloneQuestion(query, chatHistory);
 
-      const response = await BrevilabsClient.getInstance().webSearch(standaloneQuestion);
-      const citations = response.response.citations || [];
+      const response = await performWebSearch(standaloneQuestion);
+      
+      // Check if search failed (empty results with error message in answer)
+      if (response.results.length === 0 && response.answer) {
+        // Provider not configured or search failed - return friendly error
+        return JSON.stringify([{
+          type: "web_search",
+          error: response.answer,
+          content: response.answer,
+          citations: [],
+        }]);
+      }
+      
+      // Build citations from results
+      const citations = response.results.map((r, i) => `[${i + 1}] ${r.url}`);
+
+      // Build content from answer and results
+      let webContent = "";
+      if (response.answer) {
+        webContent = response.answer + "\n\n";
+      }
+      
+      // Add search results as context
+      webContent += response.results
+        .map((r, i) => `[${i + 1}] **${r.title}**\n${r.snippet}`)
+        .join("\n\n");
 
       // Return structured JSON response for consistency with other tools
-      // Format as an array of results like localSearch does
-      const webContent = response.response.choices[0].message.content;
       const formattedResults = [
         {
           type: "web_search",
           content: webContent,
           citations: citations,
           // Instruct the model to use footnote-style citations and definitions.
-          // Chat UI will render [^n] as [n] for readability and show a simple numbered Sources list.
-          // When inserted into a note, the original [^n] footnotes will remain valid Markdown footnotes.
           instruction: getWebSearchCitationInstructions(),
         },
       ];
 
       return JSON.stringify(formattedResults);
     } catch (error) {
-      console.error(`Error processing web search query ${query}:`, error);
-      return "";
+      return JSON.stringify([{
+        type: "web_search",
+        error: error instanceof Error ? error.message : "Web search failed",
+        content: error instanceof Error ? error.message : "Web search failed with unknown error",
+        citations: [],
+      }]);
     }
   },
 });
