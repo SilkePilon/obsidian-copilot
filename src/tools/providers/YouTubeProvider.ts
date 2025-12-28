@@ -44,7 +44,7 @@ const createFetchFunctions = () => ({
       ok: response.status >= 200 && response.status < 300,
       status: response.status,
       text: async () => response.text,
-      json: async () => JSON.parse(response.text),
+      json: async () => response.json,
     } as Response;
   },
   playerFetch: async ({ url, method, body, headers, lang, userAgent }: any) => {
@@ -78,7 +78,7 @@ const createFetchFunctions = () => ({
       ok: response.status >= 200 && response.status < 300,
       status: response.status,
       text: async () => response.text,
-      json: async () => JSON.parse(response.text),
+      json: async () => response.json,
     } as Response;
   },
 });

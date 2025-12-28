@@ -45,8 +45,17 @@ export class PDFParser implements FileParser {
       const startTime = Date.now();
       const binaryContent = await vault.readBinary(file);
       
-      // Use pdf-parse library
-      const pdfParse = require("pdf-parse");
+      let pdfParse;
+      try {
+        // Use dynamic import for optional pdf-parse dependency
+        // @ts-ignore - pdf-parse is an optional dependency
+        const pdfParseModule = await import("pdf-parse");
+        pdfParse = pdfParseModule.default || pdfParseModule;
+      } catch (moduleError) {
+        logError("pdf-parse module not available:", moduleError);
+        return `[Error: Could not extract content from PDF ${file.basename}. The pdf-parse library is not installed. Please install it with: npm install pdf-parse]`;
+      }
+      
       const buffer = Buffer.from(binaryContent);
       const data = await pdfParse(buffer);
       
@@ -64,7 +73,7 @@ export class PDFParser implements FileParser {
       return content;
     } catch (error) {
       logError(`Error extracting content from PDF ${file.path}:`, error);
-      return `[Error: Could not extract content from PDF ${file.basename}. PDF parsing requires the pdf-parse library.]`;
+      return `[Error: Could not extract content from PDF ${file.basename}. ${error instanceof Error ? error.message : "Unknown parsing error"}]`;
     }
   }
 
