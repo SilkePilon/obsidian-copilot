@@ -303,7 +303,7 @@ function ChatHistoryItem({
                 e.stopPropagation();
                 onDelete(chat.id);
               }}
-              className="tw-size-5 tw-p-0 tw-text-error hover:tw-text-error"
+              className="tw-size-5 tw-p-0"
               title="Confirm Delete"
             >
               <Check className="tw-size-3" />
@@ -357,7 +357,7 @@ function ChatHistoryItem({
                 e.stopPropagation();
                 onDelete(chat.id);
               }}
-              className="tw-size-5 tw-p-0 tw-text-error hover:tw-text-error"
+              className="tw-size-5 tw-p-0"
               title="delete file"
             >
               <Trash2 className="tw-size-3" />

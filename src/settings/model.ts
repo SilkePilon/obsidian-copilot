@@ -135,6 +135,7 @@ export interface CopilotSettings {
   suggestedDefaultCommands: boolean;
   autonomousAgentMaxIterations: number;
   autonomousAgentEnabledToolIds: string[];
+  autonomousAgentSkipReview: boolean;
   /** Default reasoning effort for models that support it (GPT-5, O-series, etc.) */
   reasoningEffort: "minimal" | "low" | "medium" | "high";
   /** Default verbosity level for models that support it */
@@ -153,6 +154,8 @@ export interface CopilotSettings {
   quickCommandIncludeNoteContext: boolean;
   /** Automatically add text selections to chat context */
   autoIncludeTextSelection: boolean;
+  /** Vault search: Paths and regex patterns to exclude from search results */
+  vaultSearchExcludedPaths: string[];
   /** Web search provider (tavily, brave, serpapi, serper, duckduckgo, searxng) */
   webSearchProvider: string;
   /** API key for web search providers that require it (deprecated, use webSearchApiKeys) */

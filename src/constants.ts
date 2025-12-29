@@ -749,6 +749,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
     "replaceInFile",
     "updateMemory",
   ],
+  autonomousAgentSkipReview: false,
   reasoningEffort: DEFAULT_MODEL_SETTING.REASONING_EFFORT,
   verbosity: DEFAULT_MODEL_SETTING.VERBOSITY,
   memoryFolderName: DEFAULT_MEMORY_FOLDER,
@@ -759,6 +760,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   quickCommandIncludeNoteContext: true,
   autoIncludeTextSelection: false,
   // Provider settings
+  vaultSearchExcludedPaths: [],
   webSearchProvider: "tavily",
   webSearchApiKey: "",
   webSearchApiKeys: {},

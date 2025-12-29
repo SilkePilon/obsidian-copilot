@@ -9,6 +9,45 @@ import { RETURN_ALL_LIMIT } from "@/search/v3/SearchCore";
 import { getWebSearchCitationInstructions } from "@/LLMProviders/chainRunner/utils/citationUtils";
 import { performWebSearch } from "@/tools/providers/WebSearchProvider";
 
+/**
+ * Check if a file path should be excluded from vault search based on configured patterns.
+ * Supports exact path matching and regex patterns.
+ */
+function isPathExcluded(filePath: string, excludedPatterns: string[]): boolean {
+  if (!excludedPatterns || excludedPatterns.length === 0) {
+    return false;
+  }
+
+  for (const pattern of excludedPatterns) {
+    // Try as regex first (if it looks like a regex pattern)
+    // Require both start AND end '/' for regex detection to avoid treating Unix paths as regex
+    if ((pattern.startsWith("/") && pattern.endsWith("/")) || pattern.includes("*") || pattern.includes("\\")) {
+      try {
+        // Remove leading/trailing slashes if present (for regex patterns like /pattern/)
+        const regexPattern = pattern.startsWith("/") && pattern.endsWith("/") 
+          ? pattern.slice(1, -1) 
+          : pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, ".*"); // Escape regex chars, then convert glob-style * to regex .*
+        
+        const regex = new RegExp(regexPattern);
+        if (regex.test(filePath)) {
+          return true;
+        }
+      } catch (e) {
+        // Invalid regex, fall through to exact match
+      }
+    }
+
+    // Exact path or folder match
+    // Check if file path starts with the pattern (for folder exclusions)
+    // or equals the pattern (for file exclusions)
+    if (filePath === pattern || filePath.startsWith(pattern + "/") || filePath.startsWith(pattern + "\\")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Define Zod schema for localSearch
 const localSearchSchema = z.object({
   query: z.string().min(1).describe("The search query"),
@@ -74,7 +113,20 @@ const lexicalSearchTool = createTool({
       );
     }
 
-    const formattedResults = documents.map((doc) => {
+    // Filter out excluded paths
+    const excludedPatterns = settings.vaultSearchExcludedPaths || [];
+    const filteredDocuments = documents.filter(doc => {
+      const path = doc.metadata.path || "";
+      const excluded = isPathExcluded(path, excludedPatterns);
+      if (excluded) {
+        logInfo(`Excluding document from search results: ${path}`);
+      }
+      return !excluded;
+    });
+
+    logInfo(`After exclusion filtering: ${filteredDocuments.length} documents remaining`);
+
+    const formattedResults = filteredDocuments.map((doc) => {
       const scored = doc.metadata.rerank_score ?? doc.metadata.score ?? 0;
       return {
         title: doc.metadata.title || "Untitled",
@@ -156,7 +208,20 @@ const semanticSearchTool = createTool({
       );
     }
 
-    const formattedResults = documents.map((doc) => {
+    // Filter out excluded paths
+    const excludedPatterns = settings.vaultSearchExcludedPaths || [];
+    const filteredDocuments = documents.filter(doc => {
+      const path = doc.metadata.path || "";
+      const excluded = isPathExcluded(path, excludedPatterns);
+      if (excluded) {
+        logInfo(`Excluding document from search results: ${path}`);
+      }
+      return !excluded;
+    });
+
+    logInfo(`After exclusion filtering: ${filteredDocuments.length} documents remaining`);
+
+    const formattedResults = filteredDocuments.map((doc) => {
       const scored = doc.metadata.rerank_score ?? doc.metadata.score ?? 0;
       return {
         title: doc.metadata.title || "Untitled",

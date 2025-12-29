@@ -1,6 +1,26 @@
 import { getSettings } from "@/settings/model";
 import { Vault } from "obsidian";
-import { replaceInFileTool, writeToFileTool } from "./ComposerTools";
+import { writeToFileTool } from "./ComposerTools";
+import {
+  insertLinesTool,
+  deleteLinesTool,
+  replaceLinesTool,
+  enhancedSearchReplaceTool,
+  readFileWithLineNumbersTool,
+  bulkRenameTool,
+  bulkMoveTool,
+} from "./EnhancedFileEditingTools";
+import {
+  getBacklinksTool,
+  getOutgoingLinksTool,
+  findOrphanedNotesTool,
+  findBrokenLinksTool,
+} from "./GraphLinkTools";
+import {
+  getBookmarkedNotesTool,
+  addBookmarkTool,
+  removeBookmarkTool,
+} from "./BookmarkTools";
 import { createGetFileTreeTool } from "./FileTreeTools";
 import { updateMemoryTool } from "./memoryTools";
 import { readNoteTool } from "./NoteTools";
@@ -267,34 +287,381 @@ Example usage with user explicitly asks to skip preview or confirmation:
 `,
     },
   },
+
+  // Enhanced file editing tools
   {
-    tool: replaceInFileTool,
+    tool: readFileWithLineNumbersTool,
     metadata: {
-      id: "replaceInFile",
-      displayName: "Replace in File",
-      description: "Make targeted changes to existing files using SEARCH/REPLACE blocks",
+      id: "readFileWithLineNumbers",
+      displayName: "Read File with Line Numbers",
+      description: "Read file content with line numbers displayed for precision editing",
       category: "file",
       requiresVault: true,
-      customPromptInstructions: `For replaceInFile:
-- Remember: Small edits → replaceInFile, Major rewrites → writeToFile
-- SEARCH text must match EXACTLY including all whitespace
+      customPromptInstructions: `For readFileWithLineNumbers:
+- Use when you need to see line numbers to make precise edits
+- This is especially useful before using insertLines, deleteLines, or replaceLines
+- Shows each line prefixed with its line number
 
 Example usage:
 <use_tool>
-<name>replaceInFile</name>
+<name>readFileWithLineNumbers</name>
+<path>notes/project-plan.md</path>
+</use_tool>`,
+    },
+  },
+  {
+    tool: insertLinesTool,
+    metadata: {
+      id: "insertLines",
+      displayName: "Insert Lines",
+      description: "Insert new lines at a specific position (most reliable for additions)",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For insertLines:
+- Use when you want to add new content at a specific line position
+- MOST RELIABLE tool for adding content - no fuzzy matching needed
+- Lines are inserted AFTER the specified line number (line 0 = start of file)
+- Perfect for: adding items to lists, inserting new sections, appending content
+- Use readFileWithLineNumbers first to see line numbers
+
+Example 1 - Insert at start of file:
+<use_tool>
+<name>insertLines</name>
+<path>notes/todo.md</path>
+<after_line>0</after_line>
+<lines_to_insert>["# Todo List", "", "## High Priority"]</lines_to_insert>
+</use_tool>
+
+Example 2 - Add item to list at line 10:
+<use_tool>
+<name>insertLines</name>
+<path>notes/todo.md</path>
+<after_line>10</after_line>
+<lines_to_insert>["- New task item"]</lines_to_insert>
+</use_tool>`,
+    },
+  },
+  {
+    tool: deleteLinesTool,
+    metadata: {
+      id: "deleteLines",
+      displayName: "Delete Lines",
+      description: "Delete a range of lines by line numbers",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For deleteLines:
+- Use when you want to remove specific lines from a file
+- Deletes lines from start_line to end_line (inclusive, 1-based)
+- Perfect for: removing items, deleting sections, cleaning up content
+- Use readFileWithLineNumbers first to see line numbers
+
+Example 1 - Delete a single line:
+<use_tool>
+<name>deleteLines</name>
+<path>notes/todo.md</path>
+<start_line>5</start_line>
+<end_line>5</end_line>
+</use_tool>
+
+Example 2 - Delete a range of lines:
+<use_tool>
+<name>deleteLines</name>
+<path>notes/todo.md</path>
+<start_line>10</start_line>
+<end_line>15</end_line>
+</use_tool>`,
+    },
+  },
+  {
+    tool: replaceLinesTool,
+    metadata: {
+      id: "replaceLines",
+      displayName: "Replace Lines",
+      description: "Replace a range of lines with new content (atomic delete + insert)",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For replaceLines:
+- Use when you want to replace specific lines with new content
+- Replaces lines from start_line to end_line (inclusive, 1-based)
+- Perfect for: updating sections, modifying existing content, refactoring
+- Use readFileWithLineNumbers first to see line numbers
+
+Example 1 - Replace a single line:
+<use_tool>
+<name>replaceLines</name>
+<path>notes/project.md</path>
+<start_line>5</start_line>
+<end_line>5</end_line>
+<new_lines>["## Updated Section Title"]</new_lines>
+</use_tool>
+
+Example 2 - Replace a section:
+<use_tool>
+<name>replaceLines</name>
+<path>notes/project.md</path>
+<start_line>10</start_line>
+<end_line>15</end_line>
+<new_lines>["## New Section", "", "Updated content here", "More updates"]</new_lines>
+</use_tool>`,
+    },
+  },
+  {
+    tool: enhancedSearchReplaceTool,
+    metadata: {
+      id: "enhancedSearchReplace",
+      displayName: "Enhanced Search & Replace",
+      description: "Search and replace with fuzzy matching (handles whitespace/indentation variations)",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For enhancedSearchReplace:
+- Use when you want to find and replace text that might have formatting variations
+- Implements 3-tier fuzzy matching:
+  1. Exact match (fastest)
+  2. Whitespace-insensitive (handles spacing differences)
+  3. Indentation-insensitive (handles tab/space changes)
+- More forgiving than replaceInFile, but less precise than line-based tools
+- Set replace_all: true to replace all occurrences, false for just the first
+
+Example 1 - Replace first occurrence:
+<use_tool>
+<name>enhancedSearchReplace</name>
 <path>notes/meeting.md</path>
-<diff>
-------- SEARCH
-## Attendees
+<search_text>## Attendees
+- John Smith
+- Jane Doe</search_text>
+<replace_with>## Attendees
 - John Smith
 - Jane Doe
-=======
-## Attendees
-- John Smith
-- Jane Doe
-- Bob Johnson
-+++++++ REPLACE
-</diff>
+- Bob Johnson</replace_with>
+<replace_all>false</replace_all>
+</use_tool>
+
+Example 2 - Replace all occurrences:
+<use_tool>
+<name>enhancedSearchReplace</name>
+<path>notes/project.md</path>
+<search_text>TODO: Review this</search_text>
+<replace_with>DONE: Reviewed</replace_with>
+<replace_all>true</replace_all>
+</use_tool>
+
+When to use which tool:
+- Need to add content? → Use insertLines (most reliable)
+- Need to remove content? → Use deleteLines
+- Need to update specific lines? → Use replaceLines
+- Need to find/replace text with variations? → Use enhancedSearchReplace
+- Major rewrite of file? → Use writeToFile`,
+    },
+  },
+  {
+    tool: bulkRenameTool,
+    metadata: {
+      id: "bulkRename",
+      displayName: "Bulk Rename Files",
+      description: "Rename multiple files at once using find/replace pattern",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For bulkRename:
+- Use to rename multiple files in batch
+- ALWAYS starts in preview mode (preview: true) - shows what would change
+- User must explicitly confirm to apply changes (preview: false)
+- Uses find/replace pattern on file names
+
+Example 1 - Preview renames:
+<use_tool>
+<name>bulkRename</name>
+<pattern>projects/</pattern>
+<find>draft-</find>
+<replace>final-</replace>
+<preview>true</preview>
+</use_tool>
+
+Example 2 - Apply renames after user confirms:
+<use_tool>
+<name>bulkRename</name>
+<pattern>projects/</pattern>
+<find>draft-</find>
+<replace>final-</replace>
+<preview>false</preview>
+</use_tool>`,
+    },
+  },
+  {
+    tool: bulkMoveTool,
+    metadata: {
+      id: "bulkMove",
+      displayName: "Bulk Move Files",
+      description: "Move multiple files to a destination folder",
+      category: "file",
+      requiresVault: true,
+      customPromptInstructions: `For bulkMove:
+- Use to move multiple files to a folder
+- ALWAYS starts in preview mode - shows what would move
+- User must explicitly confirm to apply changes
+- Creates destination folder if needed
+
+Example 1 - Preview moves:
+<use_tool>
+<name>bulkMove</name>
+<pattern>*.md</pattern>
+<destination>archive/</destination>
+<preview>true</preview>
+</use_tool>
+
+Example 2 - Apply moves after confirmation:
+<use_tool>
+<name>bulkMove</name>
+<pattern>old-folder/*.md</pattern>
+<destination>new-folder/</destination>
+<preview>false</preview>
+</use_tool>`,
+    },
+  },
+
+  // Graph and link analysis tools
+  {
+    tool: getBacklinksTool,
+    metadata: {
+      id: "getBacklinks",
+      displayName: "Get Backlinks",
+      description: "Find all notes that link to a specific note",
+      category: "graph",
+      requiresVault: true,
+      customPromptInstructions: `For getBacklinks:
+- Use to find what notes reference a specific note
+- Returns list of notes with link counts
+- Useful for discovering related content
+
+Example:
+<use_tool>
+<name>getBacklinks</name>
+<path>notes/project-overview.md</path>
+</use_tool>`,
+    },
+  },
+  {
+    tool: getOutgoingLinksTool,
+    metadata: {
+      id: "getOutgoingLinks",
+      displayName: "Get Outgoing Links",
+      description: "Find all links from a note to other notes",
+      category: "graph",
+      requiresVault: true,
+      customPromptInstructions: `For getOutgoingLinks:
+- Use to see what a note references
+- Shows both valid and broken links
+- Useful for link analysis and validation
+
+Example:
+<use_tool>
+<name>getOutgoingLinks</name>
+<path>notes/index.md</path>
+</use_tool>`,
+    },
+  },
+  {
+    tool: findOrphanedNotesTool,
+    metadata: {
+      id: "findOrphanedNotes",
+      displayName: "Find Orphaned Notes",
+      description: "Find notes with no incoming or outgoing links",
+      category: "graph",
+      requiresVault: true,
+      customPromptInstructions: `For findOrphanedNotes:
+- Use to find disconnected notes
+- Helps clean up vault structure
+- Can include or exclude attachments
+
+Example:
+<use_tool>
+<name>findOrphanedNotes</name>
+<includeAttachments>false</includeAttachments>
+</use_tool>`,
+    },
+  },
+  {
+    tool: findBrokenLinksTool,
+    metadata: {
+      id: "findBrokenLinks",
+      displayName: "Find Broken Links",
+      description: "Find broken links in a note or entire vault",
+      category: "graph",
+      requiresVault: true,
+      customPromptInstructions: `For findBrokenLinks:
+- Use to validate vault integrity
+- Can check specific note or entire vault
+- Returns list of broken links with locations
+
+Example 1 - Check specific note:
+<use_tool>
+<name>findBrokenLinks</name>
+<path>notes/project.md</path>
+</use_tool>
+
+Example 2 - Check entire vault:
+<use_tool>
+<name>findBrokenLinks</name>
+</use_tool>`,
+    },
+  },
+
+  // Bookmark tools
+  {
+    tool: getBookmarkedNotesTool,
+    metadata: {
+      id: "getBookmarkedNotes",
+      displayName: "Get Bookmarked Notes",
+      description: "Get all bookmarked/starred notes",
+      category: "bookmark",
+      requiresVault: true,
+      customPromptInstructions: `For getBookmarkedNotes:
+- Use to access user's important notes
+- Returns all bookmarks (files, folders, searches)
+- Useful for surfacing prioritized content
+
+Example:
+<use_tool>
+<name>getBookmarkedNotes</name>
+</use_tool>`,
+    },
+  },
+  {
+    tool: addBookmarkTool,
+    metadata: {
+      id: "addBookmark",
+      displayName: "Add Bookmark",
+      description: "Add a note to bookmarks",
+      category: "bookmark",
+      requiresVault: true,
+      customPromptInstructions: `For addBookmark:
+- Use to mark important notes
+- Can provide custom title
+- Adds to bookmarks list
+
+Example:
+<use_tool>
+<name>addBookmark</name>
+<path>notes/important-project.md</path>
+<title>Key Project Doc</title>
+</use_tool>`,
+    },
+  },
+  {
+    tool: removeBookmarkTool,
+    metadata: {
+      id: "removeBookmark",
+      displayName: "Remove Bookmark",
+      description: "Remove a note from bookmarks",
+      category: "bookmark",
+      requiresVault: true,
+      customPromptInstructions: `For removeBookmark:
+- Use to clean up bookmarks
+- Removes by file path
+
+Example:
+<use_tool>
+<name>removeBookmark</name>
+<path>notes/old-project.md</path>
 </use_tool>`,
     },
   },
