@@ -221,7 +221,7 @@ export function ChatControls({
                   Vault QA
                 </div>
               )}
-              {selectedChain === ChainType.COPILOT_PLUS_CHAIN && (
+              {selectedChain === ChainType.AGENT_CHAIN && (
                 <div className="tw-flex tw-items-center tw-gap-1">
                   <Bot className="tw-size-4" />
                   Agent
@@ -259,7 +259,7 @@ export function ChatControls({
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
-                handleModeChange(ChainType.COPILOT_PLUS_CHAIN);
+                handleModeChange(ChainType.AGENT_CHAIN);
               }}
             >
               <div className="tw-flex tw-items-center tw-gap-1">

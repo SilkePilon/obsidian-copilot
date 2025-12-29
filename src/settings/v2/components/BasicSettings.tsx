@@ -16,7 +16,7 @@ import { ApiKeyDialog } from "./ApiKeyDialog";
 const ChainType2Label: Record<ChainType, string> = {
   [ChainType.LLM_CHAIN]: "Chat",
   [ChainType.VAULT_QA_CHAIN]: "Vault QA (Basic)",
-  [ChainType.COPILOT_PLUS_CHAIN]: "Copilot Plus",
+  [ChainType.AGENT_CHAIN]: "Agent Mode",
   [ChainType.PROJECT_CHAIN]: "Projects (alpha)",
 };
 

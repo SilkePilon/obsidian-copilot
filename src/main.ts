@@ -124,7 +124,7 @@ export default class CopilotPlugin extends Plugin {
       }
     });
 
-    // Tool initialization is now handled automatically in CopilotPlusChainRunner and AutonomousAgentChainRunner
+    // Tool initialization is now handled automatically in AgentChainRunner and AutonomousAgentChainRunner
 
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu: Menu) => {

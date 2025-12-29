@@ -6,7 +6,7 @@ import { settingsStore } from "@/settings/model";
 
 /**
  * Custom hook to get all available notes from the vault.
- * Includes canvas files for all users and PDF files when in Copilot Plus mode.
+ * Includes canvas files for all users and PDF files when in Agent Mode.
  * Automatically updates when files are created, deleted, or renamed.
  * Notes are sorted by creation date in descending order (newest first).
  *
@@ -15,16 +15,16 @@ import { settingsStore } from "@/settings/model";
  * - Debounced updates (250ms) to batch rapid file operations
  * - Stable array references to prevent unnecessary re-renders
  *
- * @param isCopilotPlus - Whether to include PDF files (Plus feature)
+ * @param isAgentMode - Whether to include PDF files (Agent Mode feature)
  * @returns Array of TFile objects sorted by creation date (newest first)
  */
-export function useAllNotes(isCopilotPlus: boolean = false): TFile[] {
+export function useAllNotes(isAgentMode: boolean = false): TFile[] {
   const allNotes = useAtomValue(notesAtom, { store: settingsStore });
 
   return useMemo(() => {
     let files: TFile[];
 
-    if (isCopilotPlus) {
+    if (isAgentMode) {
       // Return all files (md + PDFs + canvas) - create a copy to avoid mutating the atom
       files = [...allNotes];
     } else {
@@ -34,5 +34,5 @@ export function useAllNotes(isCopilotPlus: boolean = false): TFile[] {
 
     // Sort by creation time in descending order (newest first)
     return files.sort((a, b) => b.stat.ctime - a.stat.ctime);
-  }, [allNotes, isCopilotPlus]);
+  }, [allNotes, isAgentMode]);
 }

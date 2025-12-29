@@ -49,7 +49,7 @@ const SUGGESTED_PROMPTS: Record<string, NotePrompt> = {
     ],
   },
   copilotPlus: {
-    title: "Copilot Plus",
+    title: "Advanced Features",
     prompts: [
       `Give me a recap of last week @vault`,
       `What are the key takeaways from my notes on <topic> @vault`,
@@ -65,7 +65,7 @@ const SUGGESTED_PROMPTS: Record<string, NotePrompt> = {
 const PROMPT_KEYS: Record<ChainType, Array<keyof typeof SUGGESTED_PROMPTS>> = {
   [ChainType.LLM_CHAIN]: ["activeNote", "quoteNote", "fun"],
   [ChainType.VAULT_QA_CHAIN]: ["qaVault", "qaVault", "quoteNote"],
-  [ChainType.COPILOT_PLUS_CHAIN]: ["copilotPlus", "copilotPlus", "copilotPlus"],
+  [ChainType.AGENT_CHAIN]: ["copilotPlus", "copilotPlus", "copilotPlus"],
   [ChainType.PROJECT_CHAIN]: ["copilotPlus", "copilotPlus", "copilotPlus"],
 };
 

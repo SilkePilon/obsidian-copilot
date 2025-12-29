@@ -19,12 +19,12 @@ export function useAtMentionSearch(
   query: string,
   mode: "category" | "search",
   selectedCategory: AtMentionCategory | undefined,
-  isCopilotPlus: boolean,
+  isAgentMode: boolean,
   availableCategoryOptions: CategoryOption[],
   currentActiveFile: TFile | null = null
 ): (CategoryOption | AtMentionOption)[] {
   // Get raw data without pre-filtering
-  const allNotes = useAllNotes(isCopilotPlus);
+  const allNotes = useAllNotes(isAgentMode);
   const allFolders = useAllFolders();
 
   // Create memoized item arrays (reused in both modes)
@@ -45,7 +45,7 @@ export function useAtMentionSearch(
 
   const toolItems: AtMentionOption[] = useMemo(
     () =>
-      isCopilotPlus
+      isAgentMode
         ? AVAILABLE_TOOLS.map((tool) => ({
             key: `tool-${tool}`,
             title: tool,
@@ -56,7 +56,7 @@ export function useAtMentionSearch(
             icon: React.createElement(Wrench, { className: "tw-size-4" }),
           }))
         : [],
-    [isCopilotPlus]
+    [isAgentMode]
   );
 
   const folderItems: AtMentionOption[] = useMemo(

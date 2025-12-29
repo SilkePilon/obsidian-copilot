@@ -61,9 +61,9 @@ type ToolCallWithExecutor = {
   args: any;
 };
 
-export class CopilotPlusChainRunner extends BaseChainRunner {
+export class AgentChainRunner extends BaseChainRunner {
   /**
-   * Get available tools for Copilot Plus chain.
+   * Get available tools for Agent chain.
    * Uses a minimal set of utility tools: time tools and file tree.
    * Search tools are handled via @commands.
    */
@@ -128,7 +128,7 @@ ${params}
   ): Promise<{ toolCalls: ToolCallWithExecutor[]; salientTerms: string[] }> {
     const availableTools = this.getAvailableToolsForPlanning();
     const adapter = ModelAdapterFactory.createAdapter(chatModel);
-    const toolDescriptions = CopilotPlusChainRunner.generateToolDescriptions(availableTools);
+    const toolDescriptions = AgentChainRunner.generateToolDescriptions(availableTools);
 
     // Build a lightweight planning prompt
     const registry = ToolRegistry.getInstance();
@@ -179,7 +179,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
       },
     ];
 
-    logInfo("[CopilotPlus] Requesting tool planning from model...");
+    logInfo("[Agent] Requesting tool planning from model...");
 
     // Get model response for planning
     const response = await withSuppressedTokenWarnings(() => chatModel.invoke(planningMessages));
@@ -187,7 +187,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
     const responseText =
       typeof response.content === "string" ? response.content : String(response.content);
 
-    logInfo("[CopilotPlus] Model planning response:", responseText.substring(0, 500));
+    logInfo("[Agent] Model planning response:", responseText.substring(0, 500));
 
     // Parse tool calls from response
     const parsedCalls = parseXMLToolCalls(responseText);
@@ -422,7 +422,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
 
       if (!envelope) {
         throw new Error(
-          "[CopilotPlus] Context envelope is required but not available. Cannot extract images."
+          "[Agent] Context envelope is required but not available. Cannot extract images."
         );
       }
 
@@ -448,7 +448,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
 
           if (activeNoteContent) {
             logInfo(
-              "[CopilotPlus] Extracting images from active note only:",
+              "[Agent] Extracting images from active note only:",
               sourcePath || "no source path"
             );
             const embeddedImages = await this.extractEmbeddedImages(activeNoteContent, sourcePath);
@@ -546,7 +546,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
       );
     }
 
-    logInfo("[CopilotPlus] Using envelope-based context construction");
+    logInfo("[Agent] Using envelope-based context construction");
 
     // Use LayerToMessagesConverter to get base messages with L1+L2 system, L3+L5 user
     const baseMessages = LayerToMessagesConverter.convert(envelope, {
@@ -657,7 +657,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
 
     for await (const chunk of chatStream) {
       if (abortController.signal.aborted) {
-        logInfo("CopilotPlus multimodal stream iteration aborted", {
+        logInfo("Agent multimodal stream iteration aborted", {
           reason: abortController.signal.reason,
         });
         break;
@@ -704,7 +704,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
       const envelope = userMessage.contextEnvelope;
       if (!envelope) {
         throw new Error(
-          "[CopilotPlus] Context envelope is required but not available. Cannot proceed with CopilotPlus chain."
+          "[Agent] Context envelope is required but not available. Cannot proceed with Agent chain."
         );
       }
       const l5User = envelope.layers.find((l) => l.id === "L5_USER");
@@ -723,7 +723,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
         );
         if (timeRangeCall) {
           timeRange = await ToolManager.callTool(timeRangeCall.tool, timeRangeCall.args);
-          logInfo("[CopilotPlus] Executed getTimeRangeMs, result:", timeRange);
+          logInfo("[Agent] Executed getTimeRangeMs, result:", timeRange);
         }
 
         // Filter tool calls: skip getFileTree in project mode, skip getTimeRangeMs if already executed
@@ -792,7 +792,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
 
       // Check if the error is due to abort signal
       if (error.name === "AbortError" || abortController.signal.aborted) {
-        logInfo("CopilotPlus stream aborted by user", { reason: abortController.signal.reason });
+        logInfo("Agent stream aborted by user", { reason: abortController.signal.reason });
         // Don't show error message for user-initiated aborts
       } else {
         await this.handleError(error, thinkStreamer.processErrorChunk.bind(thinkStreamer));

@@ -11,7 +11,7 @@ import { ChatMessage, ResponseMetadata, StreamingResult } from "@/types/message"
 import { err2String, getMessageRole, withSuppressedTokenWarnings } from "@/utils";
 import { formatErrorChunk, processToolResults } from "@/utils/toolResultUtils";
 import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
-import { CopilotPlusChainRunner } from "./CopilotPlusChainRunner";
+import { AgentChainRunner } from "./AgentChainRunner";
 import { addChatHistoryToMessages } from "./utils/chatHistoryUtils";
 import {
   joinPromptSections,
@@ -109,7 +109,7 @@ interface AgentFinalizationParams extends AgentRunContext {
   fullAIResponse: string;
 }
 
-export class AutonomousAgentChainRunner extends CopilotPlusChainRunner {
+export class AutonomousAgentChainRunner extends AgentChainRunner {
   private llmFormattedMessages: string[] = []; // Track LLM-formatted messages for memory
   private lastDisplayedContent = ""; // Track the last content displayed to user for error recovery
 
@@ -281,7 +281,7 @@ ${params}
       } else {
         logError("Autonomous agent failed, falling back to regular Plus mode:", error);
         try {
-          const fallbackRunner = new CopilotPlusChainRunner(this.chainManager);
+          const fallbackRunner = new AgentChainRunner(this.chainManager);
           return await fallbackRunner.run(
             userMessage,
             abortController,

@@ -10,7 +10,7 @@ import { BUILTIN_CHAT_MODELS, USER_SENDER } from "@/constants";
 import {
   AutonomousAgentChainRunner,
   ChainRunner,
-  CopilotPlusChainRunner,
+  AgentChainRunner,
   LLMChainRunner,
   ProjectChainRunner,
   VaultQAChainRunner,
@@ -251,7 +251,7 @@ export default class ChainManager {
         break;
       }
 
-      case ChainType.COPILOT_PLUS_CHAIN: {
+      case ChainType.AGENT_CHAIN: {
         // For initial load of the plugin
         await this.initializeQAChain(options);
         this.chain = ChainFactory.createNewLLMChain({
@@ -261,7 +261,7 @@ export default class ChainManager {
           abortController: options.abortController,
         }) as RunnableSequence;
 
-        setChainType(ChainType.COPILOT_PLUS_CHAIN);
+        setChainType(ChainType.AGENT_CHAIN);
         break;
       }
 
@@ -298,7 +298,7 @@ export default class ChainManager {
         if (settings.enableAutonomousAgent) {
           return new AutonomousAgentChainRunner(this);
         }
-        return new CopilotPlusChainRunner(this);
+        return new AgentChainRunner(this);
       case ChainType.PROJECT_CHAIN:
         return new ProjectChainRunner(this);
       default:

@@ -194,7 +194,7 @@ export const stringToChainType = (chain: string): ChainType => {
     case "vault_qa":
       return ChainType.VAULT_QA_CHAIN;
     case "copilot_plus":
-      return ChainType.COPILOT_PLUS_CHAIN;
+      return ChainType.AGENT_CHAIN;
     default:
       throw new Error(`Unknown chain type: ${chain}`);
   }
@@ -333,13 +333,13 @@ export function isAllowedFileForNoteContext(file: TFile | null): boolean {
 }
 
 /**
- * Checks if a chain type is a Plus mode chain (Copilot Plus or Project Chain).
+ * Checks if a chain type is an Agent mode chain (Agent Mode or Project Chain).
  * Plus mode chains have access to premium features like PDF processing and URL processing.
  * @param chainType The chain type to check
  * @returns true if this is a Plus mode chain, false otherwise
  */
 export function isPlusChain(chainType: ChainType): boolean {
-  return chainType === ChainType.COPILOT_PLUS_CHAIN || chainType === ChainType.PROJECT_CHAIN;
+  return chainType === ChainType.AGENT_CHAIN || chainType === ChainType.PROJECT_CHAIN;
 }
 
 /**
@@ -454,7 +454,7 @@ export interface ChatHistoryEntry {
  * Extract text-only chat history from memory variables.
  * This function pairs messages by index (i, i+1) and returns only string content.
  *
- * Note: For multimodal chains (CopilotPlus, AutonomousAgent), use
+ * Note: For multimodal chains (Agent Mode, AutonomousAgent), use
  * chatHistoryUtils.processRawChatHistory instead to preserve image content.
  *
  * @param memoryVariables Memory variables from LangChain memory
