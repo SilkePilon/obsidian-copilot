@@ -34,6 +34,20 @@ import {
 } from "./TimeTools";
 import { ToolDefinition, ToolRegistry } from "./ToolRegistry";
 import { youtubeTranscriptionTool } from "./YoutubeTools";
+import {
+  createCanvasTool,
+  getCanvasContentTool,
+  addCanvasNodeTool,
+  updateCanvasNodeTool,
+  deleteCanvasNodeTool,
+  addCanvasEdgeTool,
+  deleteCanvasEdgeTool,
+  moveCanvasNodesTool,
+  clearCanvasTool,
+  deleteCanvasTool,
+  getCanvasNodeTool,
+  listCanvasesTool,
+} from "./CanvasTools";
 
 /**
  * Define all built-in tools with their metadata
@@ -662,6 +676,285 @@ Example:
 <use_tool>
 <name>removeBookmark</name>
 <path>notes/old-project.md</path>
+</use_tool>`,
+    },
+  },
+
+  // Canvas tools
+  {
+    tool: createCanvasTool,
+    metadata: {
+      id: "createCanvas",
+      displayName: "Create Canvas",
+      description: "Create a new canvas file",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For createCanvas:
+- Use to create a new canvas file
+- Path should end with .canvas extension
+- Can optionally add initial nodes
+
+Example:
+<use_tool>
+<name>createCanvas</name>
+<path>projects/mindmap.canvas</path>
+<initialNodes>[
+  {
+    "type": "text",
+    "x": 0,
+    "y": 0,
+    "width": 250,
+    "height": 60,
+    "text": "Central Idea"
+  }
+]</initialNodes>
+</use_tool>`,
+    },
+  },
+  {
+    tool: listCanvasesTool,
+    metadata: {
+      id: "listCanvases",
+      displayName: "List Canvases",
+      description: "List all canvas files in the vault",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For listCanvases:
+- Use to find all canvas files in vault
+- Can optionally filter by folder
+
+Example:
+<use_tool>
+<name>listCanvases</name>
+</use_tool>`,
+    },
+  },
+  {
+    tool: getCanvasContentTool,
+    metadata: {
+      id: "getCanvasContent",
+      displayName: "Get Canvas Content",
+      description: "Get all nodes and edges from a canvas",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For getCanvasContent:
+- Use to read canvas structure
+- Returns all nodes and their connections
+
+Example:
+<use_tool>
+<name>getCanvasContent</name>
+<path>projects/mindmap.canvas</path>
+</use_tool>`,
+    },
+  },
+  {
+    tool: getCanvasNodeTool,
+    metadata: {
+      id: "getCanvasNode",
+      displayName: "Get Canvas Node",
+      description: "Get details of a specific node",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For getCanvasNode:
+- Use to get details about a specific node
+- Returns node properties and connected edges
+
+Example:
+<use_tool>
+<name>getCanvasNode</name>
+<path>projects/mindmap.canvas</path>
+<nodeId>abc123</nodeId>
+</use_tool>`,
+    },
+  },
+  {
+    tool: addCanvasNodeTool,
+    metadata: {
+      id: "addCanvasNode",
+      displayName: "Add Canvas Node",
+      description: "Add a node to a canvas",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For addCanvasNode:
+- Use to add nodes to existing canvas
+- Node types: text, file, link, group
+- Text nodes need 'text' property
+- File nodes need 'file' property (path to note)
+- Link nodes need 'url' property
+- Group nodes need 'label' property
+- Canvas automatically opens in new tab
+
+Example text node:
+<use_tool>
+<name>addCanvasNode</name>
+<path>projects/mindmap.canvas</path>
+<type>text</type>
+<x>100</x>
+<y>100</y>
+<width>250</width>
+<height>60</height>
+<text>New idea</text>
+</use_tool>
+
+Example file node:
+<use_tool>
+<name>addCanvasNode</name>
+<path>projects/mindmap.canvas</path>
+<type>file</type>
+<x>400</x>
+<y>100</y>
+<width>400</width>
+<height>400</height>
+<file>notes/reference.md</file>
+</use_tool>`,
+    },
+  },
+  {
+    tool: updateCanvasNodeTool,
+    metadata: {
+      id: "updateCanvasNode",
+      displayName: "Update Canvas Node",
+      description: "Update an existing canvas node",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For updateCanvasNode:
+- Use to modify node properties
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>updateCanvasNode</name>
+<path>projects/mindmap.canvas</path>
+<nodeId>abc123</nodeId>
+<text>Updated text</text>
+<x>200</x>
+<y>200</y>
+</use_tool>`,
+    },
+  },
+  {
+    tool: deleteCanvasNodeTool,
+    metadata: {
+      id: "deleteCanvasNode",
+      displayName: "Delete Canvas Node",
+      description: "Delete a node from canvas",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For deleteCanvasNode:
+- Use to remove nodes
+- Also removes connected edges
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>deleteCanvasNode</name>
+<path>projects/mindmap.canvas</path>
+<nodeId>abc123</nodeId>
+</use_tool>`,
+    },
+  },
+  {
+    tool: addCanvasEdgeTool,
+    metadata: {
+      id: "addCanvasEdge",
+      displayName: "Add Canvas Edge",
+      description: "Connect two nodes with an edge",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For addCanvasEdge:
+- Use to create connections between nodes
+- Sides: top, right, bottom, left
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>addCanvasEdge</name>
+<path>projects/mindmap.canvas</path>
+<fromNodeId>node1</fromNodeId>
+<toNodeId>node2</toNodeId>
+<fromSide>right</fromSide>
+<toSide>left</toSide>
+</use_tool>`,
+    },
+  },
+  {
+    tool: deleteCanvasEdgeTool,
+    metadata: {
+      id: "deleteCanvasEdge",
+      displayName: "Delete Canvas Edge",
+      description: "Remove a connection between nodes",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For deleteCanvasEdge:
+- Use to remove connections
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>deleteCanvasEdge</name>
+<path>projects/mindmap.canvas</path>
+<edgeId>edge123</edgeId>
+</use_tool>`,
+    },
+  },
+  {
+    tool: moveCanvasNodesTool,
+    metadata: {
+      id: "moveCanvasNodes",
+      displayName: "Move Canvas Nodes",
+      description: "Move multiple nodes by offset",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For moveCanvasNodes:
+- Use to reposition groups of nodes
+- Moves by relative offset (delta)
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>moveCanvasNodes</name>
+<path>projects/mindmap.canvas</path>
+<nodeIds>["node1", "node2", "node3"]</nodeIds>
+<deltaX>100</deltaX>
+<deltaY>50</deltaY>
+</use_tool>`,
+    },
+  },
+  {
+    tool: clearCanvasTool,
+    metadata: {
+      id: "clearCanvas",
+      displayName: "Clear Canvas",
+      description: "Remove all nodes and edges",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For clearCanvas:
+- Use to empty a canvas completely
+- Canvas automatically opens in new tab
+
+Example:
+<use_tool>
+<name>clearCanvas</name>
+<path>projects/mindmap.canvas</path>
+</use_tool>`,
+    },
+  },
+  {
+    tool: deleteCanvasTool,
+    metadata: {
+      id: "deleteCanvas",
+      displayName: "Delete Canvas",
+      description: "Delete a canvas file",
+      category: "canvas",
+      requiresVault: true,
+      customPromptInstructions: `For deleteCanvas:
+- Use to remove canvas file from vault
+
+Example:
+<use_tool>
+<name>deleteCanvas</name>
+<path>projects/old-mindmap.canvas</path>
 </use_tool>`,
     },
   },

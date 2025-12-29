@@ -81,13 +81,13 @@ export class ContextManager {
         chainType
       );
 
-      // 3. Extract URLs and process them (for Copilot Plus chain)
+      // 3. Extract URLs and process them (for Agent Mode chain)
       // Process URLs from context (only URLs explicitly added to context via URL pills)
       // This ensures url4llm is only called for URLs that appear in the context menu,
       // not for all URLs found in the message text.
       const contextUrls = message.context?.urls || [];
       const urlContextAddition =
-        chainType === ChainType.COPILOT_PLUS_CHAIN
+        chainType === ChainType.AGENT_CHAIN
           ? await this.mention.processUrlList(contextUrls)
           : { urlContext: "", imageUrls: [] };
 

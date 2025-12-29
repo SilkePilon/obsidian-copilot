@@ -21,11 +21,12 @@ const CATEGORY_NAMES: Record<string, string> = {
   mcp: "MCP",
   custom: "Custom",
   graph: "Graph & Links",
-  bookmark: "Bookmarks"
+  bookmark: "Bookmarks",
+  canvas: "Canvas"
 };
 
 // Categories that should be collapsible
-const COLLAPSIBLE_CATEGORIES = new Set(["file", "graph", "bookmark"]);
+const COLLAPSIBLE_CATEGORIES = new Set(["file", "graph", "bookmark", "canvas"]);
 
 function isWebSearchConfigured(settings: { 
   webSearchProvider: string; 
@@ -158,6 +159,7 @@ export const ToolSettingsSection: React.FC = () => {
                 {category === "file" && "Create, read, and modify files in your vault"}
                 {category === "graph" && "Analyze note relationships and vault structure"}
                 {category === "bookmark" && "Access and manage bookmarked notes"}
+                {category === "canvas" && "Create and manipulate canvas files with nodes and connections"}
               </span>
             </div>
             <div className="tw-flex tw-items-center tw-gap-2">

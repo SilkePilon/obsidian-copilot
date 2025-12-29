@@ -6,7 +6,7 @@ This directory contains the refactored chain runner system for Obsidian Copilot,
 
 The chain runner system provides two distinct tool calling approaches:
 
-1. **Legacy Tool Calling** (CopilotPlusChainRunner) - Uses Brevilabs API for intent analysis
+1. **Legacy Tool Calling** (AgentChainRunner) - Uses Brevilabs API for intent analysis
 2. **Autonomous Agent** (AutonomousAgentChainRunner) - Uses XML-based tool calling
 
 ## Architecture
@@ -16,7 +16,7 @@ chainRunner/
 ├── BaseChainRunner.ts                 # Abstract base class with shared functionality
 ├── LLMChainRunner.ts                  # Basic LLM interaction (no tools)
 ├── VaultQAChainRunner.ts              # Vault-only Q&A with retrieval
-├── CopilotPlusChainRunner.ts          # Legacy tool calling system
+├── AgentChainRunner.ts          # Legacy tool calling system
 ├── ProjectChainRunner.ts              # Project-aware extension of Plus
 ├── AutonomousAgentChainRunner.ts   # XML-based autonomous agent tool calling
 ├── index.ts                           # Main exports
@@ -29,7 +29,7 @@ chainRunner/
 
 ## Tool Calling Systems Comparison
 
-### 1. Model-Based Tool Planning (CopilotPlusChainRunner)
+### 1. Model-Based Tool Planning (AgentChainRunner)
 
 **How it works:**
 
@@ -486,8 +486,8 @@ const runner = chainManager.getChainRunner(); // Returns AutonomousAgentChainRun
 try {
   // Sequential thinking execution
 } catch (error) {
-  // Automatic fallback to CopilotPlusChainRunner
-  const fallbackRunner = new CopilotPlusChainRunner(this.chainManager);
+  // Automatic fallback to AgentChainRunner
+  const fallbackRunner = new AgentChainRunner(this.chainManager);
   return await fallbackRunner.run(/* same parameters */);
 }
 ```

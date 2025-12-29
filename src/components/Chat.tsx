@@ -821,8 +821,8 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
                     setSelectedChain(previousMode);
                     setPreviousMode(null);
                   } else {
-                    // default back to copilot plus mode (all features now free)
-                    setSelectedChain(ChainType.COPILOT_PLUS_CHAIN);
+                    // default back to agent mode (all features now free)
+                    setSelectedChain(ChainType.AGENT_CHAIN);
                   }
                 }}
                 showChatUI={(v) => setShowChatUI(v)}

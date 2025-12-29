@@ -16,7 +16,7 @@ import { ApiKeyDialog } from "./ApiKeyDialog";
 const ChainType2Label: Record<ChainType, string> = {
   [ChainType.LLM_CHAIN]: "Chat",
   [ChainType.VAULT_QA_CHAIN]: "Vault QA (Basic)",
-  [ChainType.COPILOT_PLUS_CHAIN]: "Copilot Plus",
+  [ChainType.AGENT_CHAIN]: "Agent Mode",
   [ChainType.PROJECT_CHAIN]: "Projects (alpha)",
 };
 
@@ -190,7 +190,7 @@ export const BasicSettings: React.FC = () => {
                           with semantic search. <i>Free to use with your own API key.</i>
                         </li>
                         <li>
-                          <strong>Copilot Plus:</strong> Covers all features of the 2 free modes,
+                          <strong>Agent Mode:</strong> Covers all features of the 2 free modes,
                           plus advanced features including chat context menu, advanced search,
                           AI agents, web search, and more.
                         </li>

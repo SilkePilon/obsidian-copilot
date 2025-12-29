@@ -3,7 +3,7 @@
  * These functions are kept for API compatibility but always return true/enabled.
  */
 
-/** Check if the model key is a Copilot Plus model - always returns false since Plus is deprecated. */
+/** Check if the model key is an Agent Mode model - always returns false since Plus is deprecated. */
 export function isPlusModel(_modelKey: string): boolean {
   return false;
 }

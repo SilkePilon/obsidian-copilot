@@ -111,7 +111,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [urlsFromPills, setUrlsFromPills] = useState<string[]>([]);
   const [foldersFromPills, setFoldersFromPills] = useState<string[]>([]);
   const [toolsFromPills, setToolsFromPills] = useState<string[]>([]);
-  const isCopilotPlus = isPlusChain(currentChain);
+  const isAgentMode = isPlusChain(currentChain);
 
   // Toggle states for vault, web search, composer, and autonomous agent
   const [vaultToggle, setVaultToggle] = useState(false);
@@ -186,7 +186,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    if (!isCopilotPlus) {
+    if (!isAgentMode) {
       handleSendMessage();
       return;
     }
@@ -246,7 +246,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Handle when tools are removed from pills (when pills are deleted in editor)
   const handleToolPillsRemoved = (removedTools: string[]) => {
-    if (!isCopilotPlus || autonomousAgentToggle) return;
+    if (!isAgentMode || autonomousAgentToggle) return;
 
     // Update tool button states based on removed pills
     removedTools.forEach((tool) => {
@@ -267,7 +267,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Sync tool button states with tool pills
   useEffect(() => {
-    if (!isCopilotPlus || autonomousAgentToggle) return;
+    if (!isAgentMode || autonomousAgentToggle) return;
 
     // Update button states based on current tool pills
     const hasVault = toolsFromPills.includes("@vault");
@@ -277,7 +277,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setVaultToggle(hasVault);
     setWebToggle(hasWeb);
     setComposerToggle(hasComposer);
-  }, [toolsFromPills, isCopilotPlus, autonomousAgentToggle]);
+  }, [toolsFromPills, isAgentMode, autonomousAgentToggle]);
 
   // Handle when context notes are removed from the context menu
   // This should remove all corresponding pills from the editor
@@ -545,29 +545,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Handle tool button toggle-off events - remove corresponding pills
   const handleVaultToggleOff = useCallback(() => {
-    if (lexicalEditorRef.current && isCopilotPlus) {
+    if (lexicalEditorRef.current && isAgentMode) {
       lexicalEditorRef.current.update(() => {
         $removePillsByToolName("@vault");
       });
     }
-  }, [isCopilotPlus]);
+  }, [isAgentMode]);
 
   const handleWebToggleOff = useCallback(() => {
-    if (lexicalEditorRef.current && isCopilotPlus) {
+    if (lexicalEditorRef.current && isAgentMode) {
       lexicalEditorRef.current.update(() => {
         $removePillsByToolName("@websearch");
         $removePillsByToolName("@web");
       });
     }
-  }, [isCopilotPlus]);
+  }, [isAgentMode]);
 
   const handleComposerToggleOff = useCallback(() => {
-    if (lexicalEditorRef.current && isCopilotPlus) {
+    if (lexicalEditorRef.current && isAgentMode) {
       lexicalEditorRef.current.update(() => {
         $removePillsByToolName("@composer");
       });
     }
-  }, [isCopilotPlus]);
+  }, [isAgentMode]);
 
   // Active note pill sync callbacks
   const handleActiveNoteAdded = useCallback(() => {
@@ -580,11 +580,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Handle tag selection from typeahead - auto-enable vault search
   const handleTagSelected = useCallback(() => {
-    if (isCopilotPlus && !autonomousAgentToggle && !vaultToggle) {
+    if (isAgentMode && !autonomousAgentToggle && !vaultToggle) {
       setVaultToggle(true);
       new Notice("Vault search enabled for tag query");
     }
-  }, [isCopilotPlus, autonomousAgentToggle, vaultToggle]);
+  }, [isAgentMode, autonomousAgentToggle, vaultToggle]);
 
   return (
     <div
@@ -642,10 +642,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onNotesRemoved={handleNotePillsRemoved}
           onActiveNoteAdded={handleActiveNoteAdded}
           onActiveNoteRemoved={handleActiveNoteRemoved}
-          onURLsChange={isCopilotPlus ? setUrlsFromPills : undefined}
-          onURLsRemoved={isCopilotPlus ? handleURLPillsRemoved : undefined}
-          onToolsChange={isCopilotPlus ? setToolsFromPills : undefined}
-          onToolsRemoved={isCopilotPlus ? handleToolPillsRemoved : undefined}
+          onURLsChange={isAgentMode ? setUrlsFromPills : undefined}
+          onURLsRemoved={isAgentMode ? handleURLPillsRemoved : undefined}
+          onToolsChange={isAgentMode ? setToolsFromPills : undefined}
+          onToolsRemoved={isAgentMode ? handleToolPillsRemoved : undefined}
           onFoldersChange={setFoldersFromPills}
           onFoldersRemoved={handleFolderPillsRemoved}
           onEditorReady={onEditorReady}
@@ -653,7 +653,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onTagSelected={handleTagSelected}
           placeholder={"Your AI assistant for Obsidian • @ to add context • / for custom prompts"}
           disabled={isProjectLoading}
-          isCopilotPlus={isCopilotPlus}
+          isAgentMode={isAgentMode}
           currentActiveFile={currentActiveNote}
           currentChain={currentChain}
         />

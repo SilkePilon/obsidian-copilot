@@ -900,9 +900,9 @@ export class ModelAdapterFactory {
       return new GeminiModelAdapter(modelName);
     }
 
-    // Copilot Plus models
+    // Agent Mode models
     if (modelName.includes("copilot-plus")) {
-      logInfo("Using BaseModelAdapter for Copilot Plus");
+      logInfo("Using BaseModelAdapter for Agent Mode");
       return new BaseModelAdapter(modelName);
     }
 

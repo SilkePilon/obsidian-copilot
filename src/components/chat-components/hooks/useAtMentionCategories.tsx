@@ -40,20 +40,20 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
 ];
 
 /**
- * Hook that provides available @ mention categories based on Copilot Plus status.
+ * Hook that provides available @ mention categories based on Agent Mode status.
  * Returns the array of available category options directly.
  *
- * @param isCopilotPlus - Whether Copilot Plus features are enabled
+ * @param isAgentMode - Whether Agent Mode features are enabled
  * @returns Array of CategoryOption objects
  */
-export function useAtMentionCategories(isCopilotPlus: boolean = false): CategoryOption[] {
-  // Filter category options based on Copilot Plus status
+export function useAtMentionCategories(isAgentMode: boolean = false): CategoryOption[] {
+  // Filter category options based on Agent Mode status
   return useMemo(() => {
     return CATEGORY_OPTIONS.filter((cat) => {
       if (cat.category === "tools") {
-        return isCopilotPlus;
+        return isAgentMode;
       }
       return true;
     });
-  }, [isCopilotPlus]);
+  }, [isAgentMode]);
 }
