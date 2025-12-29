@@ -319,9 +319,9 @@ export class VaultSearchExclusionModal extends Modal {
     const handleUpdate = (value: string) => {
       // Convert pattern format back to paths array
       const patterns = getDecodedPatterns(value);
-      const { folderPatterns, notePatterns } = categorizePatterns(patterns);
-      // Combine folders and notes as paths
-      const allPaths = [...folderPatterns, ...notePatterns];
+      const { tagPatterns, extensionPatterns, folderPatterns, notePatterns } = categorizePatterns(patterns);
+      // Combine all pattern types as paths
+      const allPaths = [...tagPatterns, ...extensionPatterns, ...folderPatterns, ...notePatterns];
       this.onUpdate(allPaths);
     };
 

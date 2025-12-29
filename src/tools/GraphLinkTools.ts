@@ -140,10 +140,10 @@ const findOrphanedNotesTool = createTool({
   handler: async ({ includeAttachments = false }) => {
     try {
       const orphanedNotes: string[] = [];
-      const files = app.vault.getMarkdownFiles();
+      const files = includeAttachments ? app.vault.getFiles() : app.vault.getMarkdownFiles();
 
       for (const file of files) {
-        // Check if it's an attachment
+        // Skip non-markdown files if not including attachments
         if (!includeAttachments && !file.path.endsWith('.md')) {
           continue;
         }

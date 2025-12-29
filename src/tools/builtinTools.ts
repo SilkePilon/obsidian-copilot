@@ -450,8 +450,7 @@ When to use which tool:
 - Need to remove content? → Use deleteLines
 - Need to update specific lines? → Use replaceLines
 - Need to find/replace text with variations? → Use enhancedSearchReplace
-- Major rewrite of file? → Use writeToFile
-- Simple exact find/replace? → Use replaceInFile`,
+- Major rewrite of file? → Use writeToFile`,
     },
   },
   {

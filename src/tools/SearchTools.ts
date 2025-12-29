@@ -20,12 +20,13 @@ function isPathExcluded(filePath: string, excludedPatterns: string[]): boolean {
 
   for (const pattern of excludedPatterns) {
     // Try as regex first (if it looks like a regex pattern)
-    if (pattern.startsWith("/") || pattern.includes("*") || pattern.includes("\\")) {
+    // Require both start AND end '/' for regex detection to avoid treating Unix paths as regex
+    if ((pattern.startsWith("/") && pattern.endsWith("/")) || pattern.includes("*") || pattern.includes("\\")) {
       try {
         // Remove leading/trailing slashes if present (for regex patterns like /pattern/)
         const regexPattern = pattern.startsWith("/") && pattern.endsWith("/") 
           ? pattern.slice(1, -1) 
-          : pattern.replace(/\*/g, ".*"); // Convert glob-style * to regex .*
+          : pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, ".*"); // Escape regex chars, then convert glob-style * to regex .*
         
         const regex = new RegExp(regexPattern);
         if (regex.test(filePath)) {

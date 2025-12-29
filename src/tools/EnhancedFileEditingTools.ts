@@ -239,10 +239,15 @@ function fuzzyFindMatch(
       }
     }
     
-    if (actualIndex < content.length) {
+    if (actualIndex < content.length && normalizedIndex >= normalizedSearch.length) {
+      // Calculate how many characters we actually consumed in the original content
+      let endIndex = actualIndex;
+      for (let i = normalizedIndex; i < normalizedSearch.length && endIndex < content.length; endIndex++) {
+        if (!/\s/.test(content[endIndex])) i++;
+      }
       return {
         index: actualIndex,
-        matchedText: content.substring(actualIndex, actualIndex + searchText.length),
+        matchedText: content.substring(actualIndex, endIndex),
         strategy: "whitespace-insensitive",
       };
     }
@@ -533,7 +538,9 @@ const bulkRenameTool = createTool({
       for (const file of matchingFiles) {
         const fileName = file.basename;
         if (fileName.includes(find)) {
-          const newName = fileName.replace(new RegExp(find, 'g'), replace);
+          // Escape regex special characters in find to prevent RegExp errors
+          const escapedFind = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const newName = fileName.replace(new RegExp(escapedFind, 'g'), replace);
           const newPath = file.path.replace(fileName, newName);
           renames.push({ old: file.path, new: newPath });
         }
