@@ -542,7 +542,7 @@ OUTPUT ONLY XML - NO OTHER TEXT.`;
     const envelope = userMessage.contextEnvelope;
     if (!envelope) {
       throw new Error(
-        "[CopilotPlus] Context envelope is required but not available. Cannot proceed with CopilotPlus chain."
+        "[Agent] Context envelope is required but not available. Cannot proceed with Agent chain."
       );
     }
 
