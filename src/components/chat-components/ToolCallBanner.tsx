@@ -1,8 +1,71 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ToolResultFormatter } from "@/tools/ToolResultFormatter";
-import { Check, ChevronRight, X } from "lucide-react";
+import { 
+  Check, 
+  ChevronDown, 
+  ChevronRight, 
+  X, 
+  Search, 
+  Globe, 
+  FolderTree, 
+  Clock, 
+  Calendar, 
+  Timer, 
+  Earth, 
+  Youtube, 
+  BookOpen, 
+  FileEdit, 
+  FileSearch, 
+  Repeat, 
+  Wrench,
+  Link,
+  LinkIcon,
+  FileX2,
+  Bookmark,
+  Files,
+  FolderInput,
+  RotateCcw,
+  Tag,
+  Brain
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
+
+/**
+ * Map tool names to lucide-react icons
+ */
+const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  localSearch: Search,
+  webSearch: Globe,
+  getFileTree: FolderTree,
+  getCurrentTime: Clock,
+  getTimeRangeMs: Calendar,
+  getTimeInfoByEpoch: Timer,
+  convertTimeBetweenTimezones: Earth,
+  youtubeTranscription: Youtube,
+  indexVault: BookOpen,
+  indexTool: BookOpen,
+  writeToFile: FileEdit,
+  replaceInFile: Repeat,
+  readNote: FileSearch,
+  insertLines: FileEdit,
+  deleteLines: FileX2,
+  replaceLines: Repeat,
+  enhancedSearchReplace: Repeat,
+  readFileWithLineNumbers: FileSearch,
+  bulkRename: Files,
+  bulkMove: FolderInput,
+  getBacklinks: Link,
+  getOutgoingLinks: LinkIcon,
+  findOrphanedNotes: FileX2,
+  findBrokenLinks: LinkIcon,
+  getBookmarkedNotes: Bookmark,
+  addBookmark: Bookmark,
+  removeBookmark: Bookmark,
+  getTagList: Tag,
+  updateMemory: Brain,
+};
 
 // Animation constants
 // The shimmer keyframe is defined in the global CSS (see styles.css)
@@ -80,17 +143,20 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
   // Don't allow expanding while executing
   const canExpand = !actuallyExecuting && formattedResult !== null;
 
+  // Get the icon component for this tool
+  const IconComponent = TOOL_ICONS[toolName] || Wrench;
+
   return (
     <Collapsible
       open={canExpand ? isOpen : false}
       onOpenChange={setIsOpen}
       disabled={!canExpand}
       aria-disabled={!canExpand}
-      className="tw-my-3 tw-w-full sm:tw-max-w-sm"
+      className="tw-my-3 tw-w-full"
     >
       <div
         className={cn(
-          "tw-rounded-md tw-border tw-border-border tw-bg-secondary/50",
+          "tw-rounded-md tw-border tw-border-solid tw-border-border tw-bg-transparent tw-px-3 tw-py-2",
           actuallyExecuting && "tw-relative tw-overflow-hidden"
         )}
       >
@@ -108,16 +174,13 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
           </div>
         )}
 
-        <CollapsibleTrigger
-          className={cn(
-            "tw-flex tw-w-full tw-items-center tw-justify-between tw-px-3 tw-py-2.5 tw-text-sm sm:tw-px-4 sm:tw-py-3",
-            canExpand && "hover:tw-bg-secondary/70",
-            !canExpand && "tw-cursor-default"
-          )}
-        >
+        <div className="tw-flex tw-w-full tw-items-center tw-justify-between">
           <div className="tw-flex tw-items-center tw-gap-2">
-            <span className="tw-text-base">{emoji}</span>
-            <span className="tw-font-medium">
+            {/* Icon in a bordered card like @ button */}
+            <div className="tw-flex tw-size-6 tw-items-center tw-justify-center tw-rounded-sm tw-border tw-border-solid tw-border-border">
+              <IconComponent className="tw-size-4 tw-text-muted" />
+            </div>
+            <span className="tw-font-medium tw-text-sm">
               {toolName === "readNote"
                 ? `${actuallyExecuting ? "Reading" : "Read"} ${displayName}`
                 : `${actuallyExecuting ? "Calling" : "Called"} ${displayName}`}
@@ -156,18 +219,33 @@ export const ToolCallBanner: React.FC<ToolCallBannerProps> = ({
             )}
 
             {canExpand && (
-              <ChevronRight
-                className={cn(
-                  "tw-size-4 tw-text-muted tw-transition-transform",
-                  isOpen && "tw-rotate-90"
-                )}
-              />
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="tw-h-7 tw-w-7 tw-p-0"
+                  disabled={!canExpand}
+                >
+                  <ChevronRight 
+                    className={cn(
+                      "tw-size-4 tw-transition-transform tw-duration-200",
+                      isOpen && "tw-rotate-90"
+                    )}
+                  />
+                </Button>
+              </CollapsibleTrigger>
             )}
           </div>
-        </CollapsibleTrigger>
+        </div>
 
-        <CollapsibleContent>
-          <div className="tw-border-t tw-border-border tw-px-3 tw-py-2.5 sm:tw-px-4 sm:tw-py-3">
+        <CollapsibleContent 
+          className="tw-overflow-hidden tw-transition-all tw-duration-300 tw-ease-in-out"
+          style={{
+            maxHeight: isOpen ? '2000px' : '0px',
+            opacity: isOpen ? 1 : 0,
+          }}
+        >
+          <div className="tw-mt-3 tw-border-t tw-border-border tw-pt-3">
             <div className="tw-text-sm tw-text-muted">
               <pre className="tw-overflow-x-auto tw-whitespace-pre-wrap tw-font-mono tw-text-xs">
                 {formattedResult ?? "No result available"}

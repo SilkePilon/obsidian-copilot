@@ -5,6 +5,7 @@ import { ApplyViewResult } from "@/types";
 import { z } from "zod";
 import { createTool } from "./SimpleTool";
 import { ensureFolderExists } from "@/utils";
+import { getSettings } from "@/settings/model";
 
 async function getFile(file_path: string): Promise<TFile> {
   let file = app.vault.getAbstractFileByPath(file_path);
@@ -42,10 +43,21 @@ async function getFile(file_path: string): Promise<TFile> {
 
 /**
  * Show the ApplyView preview UI for file changes and return the user decision.
+ * If autonomousAgentSkipReview is enabled, automatically applies changes.
  * @param file_path - Vault-relative path to the file
  * @param content - Target content to compare against current file content
  */
 async function show_preview(file_path: string, content: string): Promise<ApplyViewResult> {
+  const settings = getSettings();
+  
+  // Check if we should skip review
+  if (settings.autonomousAgentSkipReview) {
+    const file = await getFile(file_path);
+    await app.vault.modify(file as TFile, content);
+    return "accepted";
+  }
+
+  // Normal preview flow
   const file = await getFile(file_path);
   const activeFile = app.workspace.getActiveFile();
 
@@ -396,8 +408,9 @@ function parseSearchReplaceBlocks(
 
 export {
   writeToFileTool,
-  replaceInFileTool,
   parseSearchReplaceBlocks,
   normalizeLineEndings,
   replaceWithLineEndingAwareness,
+  show_preview,
+  getFile,
 };

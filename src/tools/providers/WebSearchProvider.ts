@@ -61,16 +61,22 @@ class TavilyProvider implements WebSearchProvider {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        api_key: apiKey,
         query: query,
         search_depth: "advanced",
         include_answer: true,
         include_raw_content: false,
         max_results: 10,
       }),
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`Tavily API error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
 
@@ -112,7 +118,13 @@ class BraveSearchProvider implements WebSearchProvider {
         Accept: "application/json",
         "X-Subscription-Token": apiKey,
       },
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`Brave Search API error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
 
@@ -148,7 +160,13 @@ class SerpAPIProvider implements WebSearchProvider {
     const response = await requestUrl({
       url: `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}&num=10`,
       method: "GET",
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`SerpAPI error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
 
@@ -193,7 +211,13 @@ class SerperProvider implements WebSearchProvider {
         q: query,
         num: 10,
       }),
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`Serper API error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
 
@@ -205,56 +229,6 @@ class SerperProvider implements WebSearchProvider {
         url: r.link,
         snippet: r.snippet,
       })),
-    };
-  }
-}
-
-/**
- * DuckDuckGo Search Provider (No API key required)
- * Uses the instant answer API
- */
-class DuckDuckGoProvider implements WebSearchProvider {
-  name = "duckduckgo";
-  displayName = "DuckDuckGo (Free)";
-  description = "Privacy-focused search. Free, no API key required. Limited results.";
-  requiresApiKey = false;
-
-  async search(query: string): Promise<WebSearchResponse> {
-    // DuckDuckGo's instant answer API
-    const response = await requestUrl({
-      url: `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,
-      method: "GET",
-    });
-
-    const data = response.json;
-    const results: WebSearchResult[] = [];
-
-    // Add abstract if available
-    if (data.AbstractText) {
-      results.push({
-        title: data.Heading || query,
-        url: data.AbstractURL || "",
-        snippet: data.AbstractText,
-      });
-    }
-
-    // Add related topics
-    if (data.RelatedTopics) {
-      for (const topic of data.RelatedTopics.slice(0, 8)) {
-        if (topic.Text && topic.FirstURL) {
-          results.push({
-            title: topic.Text.split(" - ")[0] || topic.Text,
-            url: topic.FirstURL,
-            snippet: topic.Text,
-          });
-        }
-      }
-    }
-
-    return {
-      query,
-      answer: data.AbstractText,
-      results,
     };
   }
 }
@@ -285,7 +259,13 @@ class SearxngProvider implements WebSearchProvider {
       headers: {
         Accept: "application/json",
       },
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`SearXNG API error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
 
@@ -318,28 +298,35 @@ class YouProvider implements WebSearchProvider {
       throw new Error("You.com API key not configured. Get one at https://you.com/platform");
     }
 
+    const url = `https://ydc-index.io/v1/search?query=${encodeURIComponent(query)}&count=10`;
+
     const response = await requestUrl({
-      url: `https://api.ydc-index.io/search?query=${encodeURIComponent(query)}`,
+      url: url,
       method: "GET",
       headers: {
         "X-API-Key": apiKey,
       },
+      throw: false,
     });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`You.com API error (${response.status}): ${errorMsg}`);
+    }
 
     const data = response.json;
     const results: WebSearchResult[] = [];
 
-    // Process hits (web results)
-    if (data.hits && Array.isArray(data.hits)) {
-      for (const hit of data.hits.slice(0, 10)) {
-        // Each hit may have multiple snippets
-        const snippets = hit.snippets || [];
+    // v1/search endpoint returns results.web array
+    if (data.results?.web && Array.isArray(data.results.web)) {
+      for (const result of data.results.web.slice(0, 10)) {
+        const snippets = result.snippets || [];
         const snippet = snippets.join(" ").slice(0, 500);
-        
+
         results.push({
-          title: hit.title || "",
-          url: hit.url || "",
-          snippet: snippet || hit.description || "",
+          title: result.title || "",
+          url: result.url || "",
+          snippet: snippet || result.description || "",
         });
       }
     }
@@ -351,15 +338,67 @@ class YouProvider implements WebSearchProvider {
   }
 }
 
+/**
+ * Exa Search Provider
+ * https://exa.ai - Neural search engine built for AI
+ */
+class ExaProvider implements WebSearchProvider {
+  name = "exa";
+  displayName = "Exa";
+  description = "Neural search built for AI. Fastest search API (<350ms). Free tier available.";
+  requiresApiKey = true;
+  apiKeyUrl = "https://dashboard.exa.ai/api-keys";
+
+  async search(query: string): Promise<WebSearchResponse> {
+    const apiKey = getWebSearchApiKey("exa");
+
+    if (!apiKey) {
+      throw new Error("Exa API key not configured. Get one at https://dashboard.exa.ai");
+    }
+
+    const response = await requestUrl({
+      url: "https://api.exa.ai/search",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        query: query,
+        type: "auto",
+        numResults: 10,
+        text: true,
+      }),
+      throw: false,
+    });
+
+    if (response.status !== 200) {
+      const errorMsg = response.text || JSON.stringify(response.json);
+      throw new Error(`Exa API error (${response.status}): ${errorMsg}`);
+    }
+
+    const data = response.json;
+
+    return {
+      query,
+      results: (data.results || []).map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.text || r.summary || "",
+      })),
+    };
+  }
+}
+
 // Available web search providers
 export const WEB_SEARCH_PROVIDERS: Record<string, WebSearchProvider> = {
   tavily: new TavilyProvider(),
   brave: new BraveSearchProvider(),
   serpapi: new SerpAPIProvider(),
   serper: new SerperProvider(),
-  duckduckgo: new DuckDuckGoProvider(),
   searxng: new SearxngProvider(),
   you: new YouProvider(),
+  exa: new ExaProvider(),
 };
 
 export const DEFAULT_WEB_SEARCH_PROVIDER = "tavily";

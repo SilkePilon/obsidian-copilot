@@ -292,3 +292,55 @@ export class PatternMatchingModal extends Modal {
     this.root.unmount();
   }
 }
+
+/**
+ * Modal for configuring vault search exclusions with folder/file selection UI
+ */
+export class VaultSearchExclusionModal extends Modal {
+  private root: Root;
+
+  constructor(
+    app: App,
+    private onUpdate: (paths: string[]) => void,
+    private paths: string[]
+  ) {
+    super(app);
+    // @ts-ignore
+    this.setTitle("Configure Vault Search Exclusions");
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    this.root = createRoot(contentEl);
+
+    // Convert paths array to pattern format (folder patterns)
+    const initialValue = this.paths.join(",");
+
+    const handleUpdate = (value: string) => {
+      // Convert pattern format back to paths array
+      const patterns = getDecodedPatterns(value);
+      const { folderPatterns, notePatterns } = categorizePatterns(patterns);
+      // Combine folders and notes as paths
+      const allPaths = [...folderPatterns, ...notePatterns];
+      this.onUpdate(allPaths);
+    };
+
+    this.root.render(
+      <div className="tw-flex tw-flex-col tw-gap-4">
+        <div className="tw-text-sm tw-text-muted">
+          Exclude files and folders from vault search results. Use the dropdown to select folders
+          or files.
+        </div>
+        <PatternMatchingModalContent
+          value={initialValue}
+          onUpdate={handleUpdate}
+          container={this.contentEl}
+        />
+      </div>
+    );
+  }
+
+  onClose() {
+    this.root.unmount();
+  }
+}
