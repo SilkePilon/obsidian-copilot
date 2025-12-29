@@ -293,7 +293,7 @@ export default class ChainManager {
         return new LLMChainRunner(this);
       case ChainType.VAULT_QA_CHAIN:
         return new VaultQAChainRunner(this);
-      case ChainType.COPILOT_PLUS_CHAIN:
+      case ChainType.AGENT_CHAIN:
         // Use AutonomousAgentChainRunner if the setting is enabled
         if (settings.enableAutonomousAgent) {
           return new AutonomousAgentChainRunner(this);

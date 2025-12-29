@@ -46,6 +46,14 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
   onComposerToggleOff,
   currentChain,
 }) => {
+  // Only show tool controls in Agent Mode or Project Mode
+  const isAgentMode = currentChain === ChainType.AGENT_CHAIN || currentChain === ChainType.PROJECT_CHAIN;
+  
+  // Return null if not in agent mode - tools should only be available in agent/project modes
+  if (!isAgentMode) {
+    return null;
+  }
+
   const showAutonomousAgent = currentChain !== ChainType.PROJECT_CHAIN;
 
   const handleAutonomousAgentToggle = () => {

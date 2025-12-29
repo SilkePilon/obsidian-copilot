@@ -1,5 +1,5 @@
 import { getYouTubeTranscript, extractYouTubeVideoId } from "@/tools/providers/YouTubeProvider";
-import { extractAllYoutubeUrls } from "@/utils";
+import { extractAllYoutubeUrls, isYoutubeUrl } from "@/utils";
 import { z } from "zod";
 import { createTool } from "./SimpleTool";
 
@@ -7,41 +7,62 @@ import { createTool } from "./SimpleTool";
 const MAX_USER_MESSAGE_LENGTH = 50000; // Maximum number of characters
 
 interface YouTubeHandlerArgs {
-  _userMessageContent: string;
+  url?: string;
+  urls?: string[];
+  _userMessageContent?: string;
 }
 
 const youtubeTranscriptionTool = createTool({
   name: "youtubeTranscription",
-  description: "Get transcripts of YouTube videos when the user provides YouTube URLs",
-  schema: z.object({}), // Empty schema - the tool will receive _userMessageContent internally
+  description:
+    "Get transcripts of YouTube videos. You can provide a specific URL or URLs, or the tool will extract URLs from the user's message.",
+  schema: z.object({
+    url: z
+      .string()
+      .optional()
+      .describe("A single YouTube URL to transcribe. Use this when you have a specific URL."),
+    urls: z
+      .array(z.string())
+      .optional()
+      .describe("An array of YouTube URLs to transcribe. Use this for multiple URLs."),
+  }),
   requiresUserMessageContent: true,
   handler: async (args: YouTubeHandlerArgs) => {
-    // The _userMessageContent is injected by the tool execution system
-    const { _userMessageContent } = args;
+    const { url, urls: urlsParam, _userMessageContent } = args;
 
-    // Input validation
-    if (typeof _userMessageContent !== "string") {
-      return JSON.stringify({
-        success: false,
-        message: "Invalid input: User message must be a string",
-      });
+    // Collect URLs from all sources: explicit url param, urls array param, or extracted from user message
+    let urls: string[] = [];
+
+    // Priority 1: Explicit url parameter
+    if (url && typeof url === "string" && isYoutubeUrl(url)) {
+      urls.push(url);
     }
 
-    if (_userMessageContent.length > MAX_USER_MESSAGE_LENGTH) {
-      return JSON.stringify({
-        success: false,
-        message: `Input too long: Maximum allowed length is ${MAX_USER_MESSAGE_LENGTH} characters`,
-      });
+    // Priority 2: Explicit urls array parameter
+    if (urlsParam && Array.isArray(urlsParam)) {
+      const validUrls = urlsParam.filter((u) => typeof u === "string" && isYoutubeUrl(u));
+      urls.push(...validUrls);
     }
 
-    // Extract YouTube URLs only from the user's message
-    const urls = extractAllYoutubeUrls(_userMessageContent);
+    // Priority 3: Extract from user message content (fallback)
+    if (urls.length === 0 && _userMessageContent && typeof _userMessageContent === "string") {
+      if (_userMessageContent.length > MAX_USER_MESSAGE_LENGTH) {
+        return JSON.stringify({
+          success: false,
+          message: `Input too long: Maximum allowed length is ${MAX_USER_MESSAGE_LENGTH} characters`,
+        });
+      }
+      urls = extractAllYoutubeUrls(_userMessageContent);
+    }
+
+    // Remove duplicates
+    urls = [...new Set(urls)];
 
     if (urls.length === 0) {
       return JSON.stringify({
         success: false,
         message:
-          "No YouTube URLs found in the user prompt. URLs must be in the user prompt instead of the context notes.",
+          "No valid YouTube URLs provided. Please provide a YouTube URL using the 'url' or 'urls' parameter, or include it in your message.",
       });
     }
 

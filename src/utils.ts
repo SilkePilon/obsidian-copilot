@@ -193,10 +193,13 @@ export const stringToChainType = (chain: string): ChainType => {
       return ChainType.LLM_CHAIN;
     case "vault_qa":
       return ChainType.VAULT_QA_CHAIN;
-    case "copilot_plus":
+    case "copilot_plus": // Legacy value for backward compatibility
+    case "agent_mode":
       return ChainType.AGENT_CHAIN;
+    case "project":
+      return ChainType.PROJECT_CHAIN;
     default:
-      throw new Error(`Unknown chain type: ${chain}`);
+      throw new Error(`Unsupported chain type: ${chain}`);
   }
 };
 
